@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Details</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg1: #0a0a0f;
+            --bg2: #12121a;
+            --accent: #ff6b35;
+            --accent2: #f7c59f;
+            --gold: #ffd700;
+            --text: #f0ece3;
+            --muted: #888;
+            --card-bg: rgba(255,255,255,0.04);
+            --card-border: rgba(255,107,53,0.18);
+            --glow: rgba(255,107,53,0.25);
+            --row-hover: rgba(255,107,53,0.07);
+        }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg1);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+            transition: background 0.5s, color 0.5s;
+        }
+
+        body.light {
+            --bg1: #fff8f3;
+            --bg2: #fef1e8;
+            --accent: #e85d04;
+            --accent2: #f4a261;
+            --text: #1a1a2e;
+            --muted: #999;
+            --card-bg: rgba(255,255,255,0.85);
+            --card-border: rgba(232,93,4,0.2);
+            --glow: rgba(232,93,4,0.12);
+            --row-hover: rgba(232,93,4,0.06);
+        }
+
+        /* ── Animated orbs ── */
+        .bg-canvas {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.15;
+            animation: drift 18s ease-in-out infinite alternate;
+        }
+
+        .orb1 { width: 500px; height: 500px; background: #ff6b35; top: -150px; left: -100px; animation-duration: 14s; }
+        .orb2 { width: 350px; height: 350px; background: #ff9a3c; bottom: -80px; right: -60px; animation-duration: 20s; animation-delay: -6s; }
+        .orb3 { width: 260px; height: 260px; background: #ffcc44; top: 45%; left: 60%; animation-duration: 17s; animation-delay: -3s; }
+
+        body.light .orb { opacity: 0.1; }
+
+        @keyframes drift {
+            0%   { transform: translate(0,0) scale(1); }
+            100% { transform: translate(40px,30px) scale(1.12); }
+        }
+
+        /* Grain */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E");
+            opacity: 0.4;
+            pointer-events: none;
+        }
+
+        /* ── Layout ── */
+        .page {
+            position: relative;
+            z-index: 10;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px 80px;
+        }
+
+        /* ── Toggle ── */
+        .toggle {
+            position: fixed;
+            top: 22px;
+            right: 26px;
+            z-index: 100;
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--card-border);
+            border-radius: 100px;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 13px;
+            font-family: 'DM Sans', sans-serif;
+            color: var(--text);
+            font-weight: 500;
+            transition: all 0.3s;
+            letter-spacing: 0.5px;
+        }
+
+        .toggle:hover {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent);
+            transform: scale(1.05);
+        }
+
+        /* ── Back link ── */
+        .back-link {
+            align-self: flex-start;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--muted);
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            padding: 10px 18px;
+            border: 1px solid var(--card-border);
+            border-radius: 100px;
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s;
+            margin-bottom: 40px;
+            margin-left: 20px;
+            animation: fadeDown 0.5s ease both;
+        }
+
+        .back-link:hover {
+            color: #fff;
+            background: var(--accent);
+            border-color: var(--accent);
+            transform: translateX(-4px);
+        }
+
+        .back-arrow {
+            font-size: 16px;
+            transition: transform 0.3s;
+        }
+
+        .back-link:hover .back-arrow { transform: translateX(-3px); }
+
+        /* ── Card ── */
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(18px);
+            border: 1px solid var(--card-border);
+            border-radius: 28px;
+            width: 100%;
+            max-width: 620px;
+            overflow: hidden;
+            box-shadow: 0 24px 60px rgba(0,0,0,0.3);
+            animation: cardIn 0.6s 0.1s ease both;
+            position: relative;
+        }
+
+        /* Top accent bar */
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent), var(--accent2), var(--gold), var(--accent));
+            background-size: 200% 100%;
+            animation: shimmer 3s linear infinite;
+        }
+
+        @keyframes shimmer {
+            0%   { background-position: 0% 0%; }
+            100% { background-position: 200% 0%; }
+        }
+
+        /* Card glow */
+        .card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 50% 0%, var(--glow) 0%, transparent 60%);
+            pointer-events: none;
+            border-radius: 28px;
+        }
+
+        /* ── Card header ── */
+        .card-header {
+            padding: 36px 36px 24px;
+            border-bottom: 1px solid var(--card-border);
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .card-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            flex-shrink: 0;
+            box-shadow: 0 6px 20px var(--glow);
+        }
+
+        .card-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--text) 40%, var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .card-subtitle {
+            font-size: 12px;
+            color: var(--muted);
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin-top: 3px;
+        }
+
+        /* ── Message ── */
+        .message-box {
+            margin: 20px 36px;
+            padding: 14px 20px;
+            border-radius: 14px;
+            background: rgba(255,107,53,0.1);
+            border: 1px solid rgba(255,107,53,0.25);
+            font-size: 14px;
+            color: var(--accent2);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .message-box::before { content: 'ℹ️'; font-size: 16px; }
+
+        /* ── Rows ── */
+        .rows {
+            padding: 10px 0 20px;
+        }
+
+        .row {
+            display: flex;
+            align-items: center;
+            padding: 14px 36px;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            transition: background 0.2s;
+            gap: 16px;
+            animation: rowIn 0.4s ease both;
+        }
+
+        body.light .row { border-bottom-color: rgba(0,0,0,0.05); }
+
+        .row:last-child { border-bottom: none; }
+
+        .row:hover { background: var(--row-hover); }
+
+        .row-key {
+            font-size: 12px;
+            font-weight: 500;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--accent);
+            min-width: 140px;
+            flex-shrink: 0;
+        }
+
+        .row-sep {
+            color: var(--muted);
+            font-size: 16px;
+            opacity: 0.4;
+        }
+
+        .row-value {
+            font-size: 15px;
+            color: var(--text);
+            font-weight: 400;
+            word-break: break-all;
+        }
+
+        /* row stagger */
+        .row:nth-child(1)  { animation-delay: 0.15s; }
+        .row:nth-child(2)  { animation-delay: 0.2s;  }
+        .row:nth-child(3)  { animation-delay: 0.25s; }
+        .row:nth-child(4)  { animation-delay: 0.3s;  }
+        .row:nth-child(5)  { animation-delay: 0.35s; }
+        .row:nth-child(6)  { animation-delay: 0.4s;  }
+        .row:nth-child(7)  { animation-delay: 0.45s; }
+        .row:nth-child(8)  { animation-delay: 0.5s;  }
+
+        /* ── String response ── */
+        .string-box {
+            padding: 24px 36px 32px;
+            font-size: 15px;
+            color: var(--text);
+            line-height: 1.7;
+        }
+
+        /* ── Error box ── */
+        .error-wrap {
+            width: 100%;
+            max-width: 620px;
+            margin-top: 28px;
+            background: rgba(239,68,68,0.07);
+            border: 1px solid rgba(239,68,68,0.28);
+            border-radius: 24px;
+            overflow: hidden;
+            animation: cardIn 0.5s 0.2s ease both;
+            box-shadow: 0 16px 40px rgba(239,68,68,0.12);
+        }
+        .error-header {
+            background: rgba(239,68,68,0.13);
+            padding: 20px 28px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            border-bottom: 1px solid rgba(239,68,68,0.18);
+        }
+        .error-icon-wrap {
+            width: 44px; height: 44px; border-radius: 12px;
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px; flex-shrink: 0;
+            box-shadow: 0 4px 14px rgba(239,68,68,0.4);
+        }
+        .error-heading {
+            font-family: 'Playfair Display', serif;
+            font-size: 22px; font-weight: 700; color: #ef4444;
+        }
+        .error-heading-sub {
+            font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+            color: #f87171; margin-top: 2px; opacity: 0.8;
+        }
+        .error-body {
+            padding: 24px 28px 28px;
+            display: flex; flex-direction: column; gap: 14px;
+        }
+        .error-row {
+            display: flex; align-items: flex-start; gap: 14px;
+            padding: 14px 18px; border-radius: 14px;
+            background: rgba(239,68,68,0.06);
+            border: 1px solid rgba(239,68,68,0.12);
+            transition: background 0.2s;
+        }
+        .error-row:hover { background: rgba(239,68,68,0.1); }
+        .error-row-label {
+            font-size: 11px; font-weight: 600; letter-spacing: 1.2px;
+            text-transform: uppercase; color: #f87171;
+            min-width: 72px; flex-shrink: 0; padding-top: 2px;
+        }
+        .error-row-value {
+            font-size: 15px; color: #fca5a5; font-weight: 400;
+            line-height: 1.5; word-break: break-word;
+        }
+        body.light .error-heading   { color: #dc2626; }
+        body.light .error-heading-sub { color: #ef4444; }
+        body.light .error-row-label { color: #dc2626; }
+        body.light .error-row-value { color: #b91c1c; }
+        body.light .error-row { background: rgba(239,68,68,0.05); border-color: rgba(239,68,68,0.15); }
+        .error-go-back {
+            display: inline-flex; align-items: center; gap: 8px;
+            margin-top: 6px; padding: 10px 20px;
+            background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.25);
+            border-radius: 100px; font-size: 13px; font-weight: 500;
+            color: #f87171; cursor: pointer; text-decoration: none;
+            transition: all 0.3s; width: fit-content;
+        }
+        .error-go-back:hover { background: #ef4444; color: #fff; border-color: #ef4444; transform: translateX(-3px); }
+        body.light .error-go-back { color: #dc2626; }
+
+        /* ── Animations ── */
+        @keyframes fadeDown {
+            from { opacity: 0; transform: translateY(-14px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes cardIn {
+            from { opacity: 0; transform: translateY(28px) scale(0.97); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        @keyframes rowIn {
+            from { opacity: 0; transform: translateX(-12px); }
+            to   { opacity: 1; transform: translateX(0); }
+        }
+
+        @media (max-width: 480px) {
+            .card-header { padding: 28px 22px 20px; }
+            .rows .row   { padding: 12px 22px; flex-wrap: wrap; }
+            .row-key     { min-width: 100%; }
+            .back-link   { margin-left: 0; }
+            .string-box  { padding: 20px 22px 28px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="bg-canvas">
+    <div class="orb orb1"></div>
+    <div class="orb orb2"></div>
+    <div class="orb orb3"></div>
+</div>
+
+<button class="toggle" onclick="toggleMode()">☀️ Light</button>
+
+<div class="page">
+
+    <a class="back-link" href="/">
+        <span class="back-arrow">←</span> Back to Home
+    </a>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-icon">📋</div>
+            <div>
+                <div class="card-title">Details</div>
+                <div class="card-subtitle">API Response</div>
+            </div>
+        </div>
+
+        <!-- ✅ SHOW MESSAGE (for create/update/delete) -->
+        <div class="message-box" th:if="${message}" th:text="${message}"></div>
+
+        <!-- ✅ DOMAIN BLOCK: Menu Item -->
+        <div class="rows" th:if="${menuItem != null}">
+            <div class="row">
+                <span class="row-key">Item ID</span><span class="row-sep">·</span>
+                <span class="row-value" th:text="${menuItem['itemId']}"></span>
+            </div>
+            <div class="row">
+                <span class="row-key">Item Name</span><span class="row-sep">·</span>
+                <span class="row-value" th:text="${menuItem['itemName']}"></span>
+            </div>
+            <div class="row">
+                <span class="row-key">Description</span><span class="row-sep">·</span>
+                <span class="row-value" th:text="${menuItem['itemDescription']}"></span>
+            </div>
+            <div class="row">
+                <span class="row-key">Price</span><span class="row-sep">·</span>
+                <span class="row-value" th:text="${menuItem['itemPrice']}"></span>
+            </div>
+            <div class="row">
+                <span class="row-key">Restaurant ID</span><span class="row-sep">·</span>
+                <span class="row-value" th:text="${menuItem['restaurantId']}"></span>
+            </div>
+        </div>
+
+        <!-- ✅ DOMAIN BLOCK: Order Item -->
+        <div class="rows" th:if="${orderItem != null}">
+            <div class="row">
+                <span class="row-key">Order Item ID</span><span class="row-sep">·</span>
+                <span class="row-value" th:text="${orderItem['orderItemId']}"></span>
+            </div>
+            <div class="row">
+                <span class="row-key">Order ID</span><span class="row-sep">·</span>
+                <span class="row-value" th:text="${orderItem['orderId']}"></span>
+            </div>
+            <div class="row">
+                <span class="row-key">Item ID</span><span class="row-sep">·</span>
+                <span class="row-value" th:text="${orderItem['itemId']}"></span>
+            </div>
+            <div class="row">
+                <span class="row-key">Quantity</span><span class="row-sep">·</span>
+                <span class="row-value" th:text="${orderItem['quantity']}"></span>
+            </div>
+            <div class="row" th:if="${orderItem['subtotal'] != null}">
+                <span class="row-key">Subtotal</span><span class="row-sep">·</span>
+                <span class="row-value" th:text="${orderItem['subtotal']}"></span>
+            </div>
+        </div>
+
+        <!-- ✅ DOMAIN BLOCK: Order -->
+        <div class="rows" th:if="${order != null}">
+            <div class="row" th:each="entry : ${order}">
+                <span class="row-key" th:text="${entry.key}"></span>
+                <span class="row-sep">·</span>
+                <span class="row-value" th:text="${entry.value}"></span>
+            </div>
+        </div>
+
+        <!-- ✅ DOMAIN BLOCK: Stats -->
+        <div class="rows" th:if="${statLabel != null}">
+            <div class="row">
+                <span class="row-key" th:text="${statLabel}"></span>
+                <span class="row-sep">·</span>
+                <span class="row-value" th:text="${statValue}"></span>
+            </div>
+        </div>
+
+        <!-- ✅ CASE 1: MAP / OBJECT RESPONSE -->
+        <div class="rows" th:if="${single != null and !(single instanceof T(java.lang.String))}">
+            <div class="row" th:each="entry : ${single}">
+                <span class="row-key" th:text="${entry.key}"></span>
+                <span class="row-sep">·</span>
+                <span class="row-value" th:text="${entry.value}"></span>
+            </div>
+        </div>
+
+        <!-- ✅ CASE 2: STRING RESPONSE -->
+        <div class="string-box" th:if="${single instanceof T(java.lang.String)}">
+            <span th:text="${single}"></span>
+        </div>
+    </div>
+
+    <!-- ❌ ERROR DISPLAY — parsed, user-friendly -->
+    <div class="error-wrap" th:if="${error}" id="errorWrap">
+        <div class="error-header">
+            <div class="error-icon-wrap">🚫</div>
+            <div>
+                <div class="error-heading">Something went wrong</div>
+                <div class="error-heading-sub">API Error Response</div>
+            </div>
+        </div>
+        <div class="error-body" id="errorBody">
+            <!-- filled by JS -->
+        </div>
+        <!-- hidden raw for JS to parse -->
+        <span id="rawError" th:text="${error}" style="display:none"></span>
+    </div>
+
+</div>
+
+<script>
+    let isDark = true;
+    function toggleMode() {
+        isDark = !isDark;
+        document.body.classList.toggle('light', !isDark);
+        document.querySelector('.toggle').textContent = isDark ? '☀️ Light' : '🌙 Dark';
+    }
+
+    // ── Parse & render error nicely ──────────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+        const rawEl  = document.getElementById('rawError');
+        const bodyEl = document.getElementById('errorBody');
+        if (!rawEl || !bodyEl) return;
+
+        const raw = rawEl.textContent.trim();
+        if (!raw) return;
+
+        let status = null, message = null, errorType = null;
+
+        // Try to parse as JSON
+        try {
+            const obj = JSON.parse(raw);
+            status    = obj.status    || null;
+            errorType = obj.error     || null;
+            message   = obj.message   || null;
+
+            // Fallbacks if backend sends different keys
+            if (!message) message = obj.detail || obj.description || obj.msg || null;
+            if (!status)  status  = obj.statusCode || null;
+        } catch (e) {
+            // Not JSON — use raw string as message
+            message = raw;
+        }
+
+        // Map HTTP status codes to friendly labels
+        const statusLabels = {
+            400: '400 — Bad Request',
+            401: '401 — Unauthorized',
+            403: '403 — Forbidden',
+            404: '404 — Not Found',
+            405: '405 — Method Not Allowed',
+            409: '409 — Conflict',
+            422: '422 — Unprocessable Entity',
+            500: '500 — Internal Server Error',
+            502: '502 — Bad Gateway',
+            503: '503 — Service Unavailable',
+        };
+
+        const rows = [];
+
+        if (status) {
+            rows.push({
+                label: 'Status',
+                value: statusLabels[status] || String(status),
+                icon: getStatusIcon(status)
+            });
+        }
+        if (errorType) {
+            rows.push({ label: 'Error', value: errorType, icon: '🏷️' });
+        }
+        if (message) {
+            rows.push({ label: 'Message', value: message, icon: '💬' });
+        }
+        if (!rows.length) {
+            rows.push({ label: 'Details', value: raw, icon: '📄' });
+        }
+
+        // Render rows
+        rows.forEach(r => {
+            const div = document.createElement('div');
+            div.className = 'error-row';
+            div.innerHTML = `
+                <span class="error-row-label">${r.icon} ${r.label}</span>
+                <span class="error-row-value">${escHtml(r.value)}</span>`;
+            bodyEl.appendChild(div);
+        });
+
+        // Go back button
+        const btn = document.createElement('a');
+        btn.className   = 'error-go-back';
+        btn.href        = 'javascript:history.back()';
+        btn.textContent = '← Go Back & Try Again';
+        bodyEl.appendChild(btn);
+    });
+
+    function getStatusIcon(code) {
+        if (code >= 500) return '🔥';
+        if (code === 404) return '🔍';
+        if (code === 403 || code === 401) return '🔒';
+        if (code === 400 || code === 422) return '⚠️';
+        return '❌';
+    }
+
+    function escHtml(str) {
+        return String(str)
+            .replace(/&/g,'&amp;')
+            .replace(/</g,'&lt;')
+            .replace(/>/g,'&gt;')
+            .replace(/"/g,'&quot;');
+    }
+</script>
+
+</body>
+</html>

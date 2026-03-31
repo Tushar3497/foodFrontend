@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Rating Results</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+        :root { --bg1:#0a0a0f; --accent:#ff6b35; --accent2:#f7c59f; --text:#f0ece3; --muted:#7a7a8a; --card-bg:rgba(255,255,255,0.045); --card-border:rgba(255,107,53,0.18); --th-bg:rgba(255,107,53,0.15); --tr-hover:rgba(255,107,53,0.07); --td-border:rgba(255,255,255,0.04); }
+        body.light { --bg1:#fff8f3; --accent:#e85d04; --accent2:#f4a261; --text:#1a1a2e; --muted:#888; --card-bg:rgba(255,255,255,0.92); --card-border:rgba(232,93,4,0.2); --th-bg:rgba(232,93,4,0.1); --tr-hover:rgba(232,93,4,0.05); --td-border:rgba(0,0,0,0.05); }
+        body { font-family:'DM Sans',sans-serif; background:var(--bg1); color:var(--text); min-height:100vh; overflow-x:hidden; transition:background 0.5s,color 0.5s; }
+        .bg-canvas { position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
+        .orb { position:absolute; border-radius:50%; filter:blur(90px); opacity:0.15; animation:drift 18s ease-in-out infinite alternate; }
+        .orb1 { width:500px; height:500px; background:#ff6b35; top:-130px; left:-100px; animation-duration:14s; }
+        .orb2 { width:360px; height:360px; background:#ff9a3c; bottom:-80px; right:-60px; animation-duration:20s; animation-delay:-6s; }
+        .orb3 { width:240px; height:240px; background:#ffcc44; top:40%; left:60%; animation-duration:17s; animation-delay:-4s; }
+        body.light .orb { opacity:0.1; }
+        @keyframes drift { 0%{transform:translate(0,0) scale(1)} 100%{transform:translate(40px,30px) scale(1.1)} }
+        body::after { content:''; position:fixed; inset:0; z-index:1; pointer-events:none; opacity:0.4; background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E"); }
+        .toggle { position:fixed; top:22px; right:26px; z-index:100; background:var(--card-bg); backdrop-filter:blur(12px); border:1px solid var(--card-border); border-radius:100px; padding:10px 20px; cursor:pointer; font-size:13px; font-family:'DM Sans',sans-serif; color:var(--text); font-weight:500; transition:all 0.3s; }
+        .toggle:hover { background:var(--accent); color:#fff; border-color:var(--accent); transform:scale(1.05); }
+        .page { position:relative; z-index:10; min-height:100vh; padding:40px; }
+        .back-link { display:inline-flex; align-items:center; gap:8px; color:var(--muted); text-decoration:none; font-size:13px; font-weight:500; padding:10px 20px; border:1px solid var(--card-border); border-radius:100px; background:var(--card-bg); backdrop-filter:blur(10px); transition:all 0.3s; margin-bottom:36px; }
+        .back-link:hover { color:#fff; background:var(--accent); border-color:var(--accent); transform:translateX(-4px); }
+        .card { background:var(--card-bg); backdrop-filter:blur(18px); border:1px solid var(--card-border); border-radius:24px; padding:36px; max-width:1200px; margin:0 auto; position:relative; overflow:hidden; animation:cardIn 0.5s ease both; box-shadow:0 20px 60px rgba(0,0,0,0.25); }
+        .card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg,var(--accent),var(--accent2),#ffd700,var(--accent)); background-size:200% 100%; animation:shimmer 3s linear infinite; }
+        @keyframes shimmer { 0%{background-position:0%} 100%{background-position:200%} }
+        .card-header { display:flex; align-items:center; gap:16px; margin-bottom:28px; padding-bottom:22px; border-bottom:1px solid var(--card-border); }
+        .card-icon { width:48px; height:48px; border-radius:14px; background:linear-gradient(135deg,var(--accent),var(--accent2)); display:flex; align-items:center; justify-content:center; font-size:22px; box-shadow:0 6px 20px rgba(255,107,53,0.3); flex-shrink:0; }
+        .card-title { font-family:'Playfair Display',serif; font-size:26px; font-weight:700; background:linear-gradient(135deg,var(--text) 40%,var(--accent)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+        .card-sub { font-size:11px; letter-spacing:2px; text-transform:uppercase; color:var(--muted); margin-top:3px; }
+        .count-pill { margin-left:auto; background:rgba(255,107,53,0.12); border:1px solid var(--card-border); border-radius:100px; padding:6px 16px; font-size:12px; font-weight:600; color:var(--accent); letter-spacing:0.5px; white-space:nowrap; }
+        .error-box { background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.28); border-radius:14px; padding:18px 22px; color:#fca5a5; font-size:14px; display:flex; align-items:center; gap:10px; }
+        .error-box::before { content:'⚠️'; font-size:18px; }
+        body.light .error-box { color:#b91c1c; }
+        .msg-box { background:rgba(255,107,53,0.07); border:1px solid rgba(255,107,53,0.2); border-radius:14px; padding:18px 22px; color:var(--accent2); font-size:14px; display:flex; align-items:center; gap:10px; }
+        .msg-box::before { content:'ℹ️'; font-size:18px; }
+        .table-wrapper { overflow-x:auto; border-radius:16px; border:1px solid var(--card-border); }
+        table { width:100%; border-collapse:collapse; font-size:14px; min-width:750px; }
+        thead tr { background:var(--th-bg); }
+        th { padding:14px 18px; text-align:left; font-size:10.5px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--accent); white-space:nowrap; border-bottom:1px solid var(--card-border); }
+        td { padding:14px 18px; border-bottom:1px solid var(--td-border); color:var(--text); vertical-align:middle; }
+        tbody tr:last-child td { border-bottom:none; }
+        tbody tr { transition:background 0.2s; animation:rowIn 0.35s ease both; }
+        tbody tr:hover { background:var(--tr-hover); }
+        .star-badge { display:inline-flex; align-items:center; gap:5px; background:rgba(255,215,0,0.12); border:1px solid rgba(255,215,0,0.3); border-radius:100px; padding:4px 12px; font-size:13px; font-weight:600; color:#ffd700; }
+        .dash { color:var(--muted); font-style:italic; }
+        @keyframes cardIn { from{opacity:0;transform:translateY(22px) scale(0.97)} to{opacity:1;transform:translateY(0) scale(1)} }
+        @keyframes rowIn  { from{opacity:0;transform:translateX(-8px)} to{opacity:1;transform:translateX(0)} }
+        @media(max-width:600px){ .page{padding:20px 16px} .card{padding:22px 16px} }
+    </style>
+</head>
+<body>
+<div class="bg-canvas">
+    <div class="orb orb1"></div><div class="orb orb2"></div><div class="orb orb3"></div>
+</div>
+<button class="toggle" onclick="toggleMode()">☀️ Light</button>
+
+<div class="page">
+    <a class="back-link" href="/">← Back to Home</a>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-icon">⭐</div>
+            <div>
+                <div class="card-title">Rating Results</div>
+                <div class="card-sub">API Response</div>
+            </div>
+            <div class="count-pill" id="countPill" style="display:none"></div>
+        </div>
+
+        <!-- Error -->
+        <div class="error-box" th:if="${error}" th:text="${error}"></div>
+
+        <!-- Messages -->
+        <div class="msg-box" id="noDataMsg" style="display:none">No data found.</div>
+        <div class="msg-box" id="emptyMsg"  style="display:none">No records available.</div>
+
+        <!-- TABLE rendered by Thymeleaf directly — handles all 3 cases -->
+        <div class="table-wrapper" id="tableWrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Rating ID</th>
+                        <th>Rating</th>
+                        <th>Review</th>
+                        <th>Order ID</th>
+                        <th>Restaurant ID</th>
+                        <th>Restaurant Name</th>
+                        <th>Restaurant Address</th>
+                        <th>Restaurant Phone</th>
+                    </tr>
+                </thead>
+                <tbody id="ratingBody">
+
+                    <!-- CASE 1: data is a List (getAll, byRestaurant, byValue, flat, etc.) -->
+                    <th:block th:if="${data != null and data instanceof T(java.util.List)}">
+                        <tr th:each="row : ${data}">
+                            <td><strong th:text="'#' + ${row['ratingId']}" style="color:var(--accent)"></strong></td>
+                            <td>
+                                <span class="star-badge" th:if="${row['rating'] != null}">
+                                    ★ <span th:text="${row['rating']} + '/5'"></span>
+                                </span>
+                                <span class="dash" th:unless="${row['rating'] != null}">—</span>
+                            </td>
+                            <td th:text="${row['review'] != null ? row['review'] : '—'}"></td>
+                            <td th:text="${row['orderId'] != null ? row['orderId'] : '—'}"></td>
+                            <td th:text="${row['restaurant'] != null ? row['restaurant']['restaurantId'] : '—'}"></td>
+                            <td style="font-weight:500" th:text="${row['restaurant'] != null ? row['restaurant']['restaurantName'] : '—'}"></td>
+                            <td style="color:var(--muted)" th:text="${row['restaurant'] != null ? row['restaurant']['restaurantAddress'] : '—'}"></td>
+                            <td th:text="${row['restaurant'] != null ? row['restaurant']['restaurantPhone'] : '—'}"></td>
+                        </tr>
+                    </th:block>
+
+                    <!-- CASE 2: data is a single Map (not a list) -->
+                    <th:block th:if="${data != null and !(data instanceof T(java.util.List)) and !(data instanceof T(java.lang.String))}">
+                        <tr>
+                            <td><strong th:text="'#' + ${data['ratingId']}" style="color:var(--accent)"></strong></td>
+                            <td>
+                                <span class="star-badge" th:if="${data['rating'] != null}">
+                                    ★ <span th:text="${data['rating']} + '/5'"></span>
+                                </span>
+                                <span class="dash" th:unless="${data['rating'] != null}">—</span>
+                            </td>
+                            <td th:text="${data['review'] != null ? data['review'] : '—'}"></td>
+                            <td th:text="${data['orderId'] != null ? data['orderId'] : '—'}"></td>
+                            <td th:text="${data['restaurant'] != null ? data['restaurant']['restaurantId'] : '—'}"></td>
+                            <td style="font-weight:500" th:text="${data['restaurant'] != null ? data['restaurant']['restaurantName'] : '—'}"></td>
+                            <td style="color:var(--muted)" th:text="${data['restaurant'] != null ? data['restaurant']['restaurantAddress'] : '—'}"></td>
+                            <td th:text="${data['restaurant'] != null ? data['restaurant']['restaurantPhone'] : '—'}"></td>
+                        </tr>
+                    </th:block>
+
+                    <!-- CASE 3: single attribute (getRatingById returns model "single") -->
+                    <th:block th:if="${single != null and !(single instanceof T(java.lang.String))}">
+                        <tr>
+                            <td><strong th:text="'#' + ${single['ratingId']}" style="color:var(--accent)"></strong></td>
+                            <td>
+                                <span class="star-badge" th:if="${single['rating'] != null}">
+                                    ★ <span th:text="${single['rating']} + '/5'"></span>
+                                </span>
+                                <span class="dash" th:unless="${single['rating'] != null}">—</span>
+                            </td>
+                            <td th:text="${single['review'] != null ? single['review'] : '—'}"></td>
+                            <td th:text="${single['orderId'] != null ? single['orderId'] : '—'}"></td>
+                            <td th:text="${single['restaurant'] != null ? single['restaurant']['restaurantId'] : '—'}"></td>
+                            <td style="font-weight:500" th:text="${single['restaurant'] != null ? single['restaurant']['restaurantName'] : '—'}"></td>
+                            <td style="color:var(--muted)" th:text="${single['restaurant'] != null ? single['restaurant']['restaurantAddress'] : '—'}"></td>
+                            <td th:text="${single['restaurant'] != null ? single['restaurant']['restaurantPhone'] : '—'}"></td>
+                        </tr>
+                    </th:block>
+
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Fallback generic table for menu/order/orderitems -->
+        <div class="table-wrapper" id="genericDomainTable"
+             th:if="${data != null and data instanceof T(java.util.List) and !#lists.isEmpty(data) and data[0] instanceof T(java.util.Map) and !data[0].containsKey('ratingId')}">
+            <table>
+                <thead>
+                    <tr>
+                        <th th:each="key : ${data[0].keySet()}" th:text="${key}"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="row : ${data}">
+                        <td th:each="val : ${row.values()}" th:text="${val}"></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+</div>
+
+<script>
+let isDark = true;
+function toggleMode() {
+    isDark = !isDark;
+    document.body.classList.toggle('light', !isDark);
+    document.querySelector('.toggle').textContent = isDark ? '☀️ Light' : '🌙 Dark';
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const tbody    = document.getElementById('ratingBody');
+    const tableWrap = document.getElementById('tableWrap');
+    const noDataMsg = document.getElementById('noDataMsg');
+    const emptyMsg  = document.getElementById('emptyMsg');
+    const countPill = document.getElementById('countPill');
+
+    const rows = tbody ? tbody.querySelectorAll('tr') : [];
+
+    if (rows.length === 0) {
+        // Check if there's an error already shown
+        const errBox = document.querySelector('.error-box');
+        if (!errBox) {
+            tableWrap.style.display = 'none';
+            noDataMsg.style.display = 'flex';
+        } else {
+            tableWrap.style.display = 'none';
+        }
+    } else {
+        tableWrap.style.display = 'block';
+        countPill.textContent = rows.length + (rows.length === 1 ? ' record' : ' records');
+        countPill.style.display = 'block';
+        // stagger row animation
+        rows.forEach((r, i) => {
+            r.style.animationDelay = (i * 0.05) + 's';
+        });
+    }
+
+    const alt = document.getElementById('genericDomainTable');
+    if (alt) {
+        tableWrap.style.display = 'none';
+        if (countPill) {
+            const altRows = alt.querySelectorAll('tbody tr').length;
+            countPill.textContent = altRows + (altRows === 1 ? ' record' : ' records');
+            countPill.style.display = altRows > 0 ? 'block' : 'none';
+        }
+    }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Order Item - Details</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f5f7fb; margin: 0; }
+        .wrap { max-width: 720px; margin: 30px auto; background: #fff; border-radius: 10px; padding: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
+        h2 { margin-top: 0; color: #1f2937; }
+        a { text-decoration: none; color: #1f2937; font-weight: bold; }
+        .msg { margin-top: 16px; padding: 12px; border-radius: 6px; background: #ecfdf5; color: #065f46; border: 1px solid #10b981; }
+        .grid { margin-top: 16px; display: grid; grid-template-columns: 180px 1fr; gap: 10px; }
+        .label { font-weight: bold; color: #374151; }
+        .stat { margin-top: 20px; padding: 16px; border-radius: 8px; background: #f0f9ff; border: 1px solid #38bdf8; }
+        .stat-label { font-weight: bold; color: #0369a1; }
+        .stat-value { font-size: 1.5em; color: #0c4a6e; margin-top: 4px; }
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <a href="/menuitems">Back to Order Items</a>
+    <h2 th:text="${title != null ? title : 'Order Item Details'}"></h2>
+
+    <div th:if="${message}" class="msg" th:text="${message}"></div>
+
+    <div th:if="${orderItem != null}" class="grid">
+        <div class="label">Order Item ID</div><div th:text="${orderItem['orderItemId']}"></div>
+        <div class="label">Order ID</div><div th:text="${orderItem['orderId']}"></div>
+        <div class="label">Item ID</div><div th:text="${orderItem['itemId']}"></div>
+        <div class="label">Quantity</div><div th:text="${orderItem['quantity']}"></div>
+        <div th:if="${orderItem['itemName'] != null}" class="label">Item Name</div>
+        <div th:if="${orderItem['itemName'] != null}" th:text="${orderItem['itemName']}"></div>
+        <div th:if="${orderItem['itemPrice'] != null}" class="label">Item Price</div>
+        <div th:if="${orderItem['itemPrice'] != null}" th:text="${orderItem['itemPrice']}"></div>
+        <div th:if="${orderItem['subtotal'] != null}" class="label">Subtotal</div>
+        <div th:if="${orderItem['subtotal'] != null}" th:text="${orderItem['subtotal']}"></div>
+        <div th:if="${orderItem['itemDescription'] != null}" class="label">Description</div>
+        <div th:if="${orderItem['itemDescription'] != null}" th:text="${orderItem['itemDescription']}"></div>
+        <div th:if="${orderItem['restaurantid'] != null}" class="label">Restaurant ID</div>
+        <div th:if="${orderItem['restaurantid'] != null}" th:text="${orderItem['restaurantid']}"></div>
+    </div>
+
+    <!-- For scalar values like totalQuantity, totalPrice -->
+    <div th:if="${statLabel != null}" class="stat">
+        <div class="stat-label" th:text="${statLabel}"></div>
+        <div class="stat-value" th:text="${statValue}"></div>
+    </div>
+</div>
+</body>
+</html>
