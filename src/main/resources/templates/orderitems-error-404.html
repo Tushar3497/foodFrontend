@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Order Items Error 404</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #fff7ed; }
+        .box { max-width: 760px; margin: 40px auto; background: #fff; border: 1px solid #fdba74; border-radius: 10px; padding: 20px; }
+        h2 { color: #c2410c; margin-top: 0; }
+        pre { background: #fef2f2; padding: 10px; border-radius: 6px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+<div class="box">
+    <h2>Order Items - 404 Not Found</h2>
+    <p><strong>Action:</strong> <span th:text="${action}"></span></p>
+    <p>The requested order item resource was not found.</p>
+    <pre th:text="${errorBody}"></pre>
+    <a href="/menuitems">Back to Order Items</a>
+</div>
+</body>
+</html>

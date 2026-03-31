@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Menu Items Error 409</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #fffbeb; }
+        .box { max-width: 760px; margin: 40px auto; background: #fff; border: 1px solid #f59e0b; border-radius: 10px; padding: 20px; }
+        h2 { color: #b45309; margin-top: 0; }
+        pre { background: #fef2f2; padding: 10px; border-radius: 6px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+<div class="box">
+    <h2>Menu Items - 409 Conflict</h2>
+    <p><strong>Action:</strong> <span th:text="${action}"></span></p>
+    <p>The request conflicts with existing menu item data (for example duplicate item ID).</p>
+    <pre th:text="${errorBody}"></pre>
+    <a href="/menuitems">Back to Menu Items</a>
+</div>
+</body>
+</html>

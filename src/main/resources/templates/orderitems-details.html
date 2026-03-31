@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Order Items - Enriched Details</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f5f7fb; margin: 0; }
+        .wrap { max-width: 1200px; margin: 30px auto; background: #fff; border-radius: 10px; padding: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
+        h2 { margin-top: 0; color: #1f2937; }
+        a { text-decoration: none; color: #1f2937; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+        th, td { border: 1px solid #d1d5db; padding: 10px; text-align: left; }
+        th { background: #111827; color: #fff; }
+        .empty { margin-top: 12px; color: #6b7280; }
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <a href="/menuitems">Back to Order Items</a>
+    <h2 th:text="${title != null ? title : 'Order Item Details'}"></h2>
+    <div th:if="${orderItems == null or #lists.isEmpty(orderItems)}" class="empty">No records found.</div>
+    <table th:if="${orderItems != null and !#lists.isEmpty(orderItems)}">
+        <thead>
+        <tr>
+            <th>Order Item ID</th>
+            <th>Order ID</th>
+            <th>Item ID</th>
+            <th>Item Name</th>
+            <th>Item Price</th>
+            <th>Quantity</th>
+            <th>Subtotal</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="item : ${orderItems}">
+            <td th:text="${item['orderItemId']}"></td>
+            <td th:text="${item['orderId']}"></td>
+            <td th:text="${item['itemId']}"></td>
+            <td th:text="${item['itemName']}"></td>
+            <td th:text="${item['itemPrice']}"></td>
+            <td th:text="${item['quantity']}"></td>
+            <td th:text="${item['subtotal']}"></td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+</body>
+</html>
