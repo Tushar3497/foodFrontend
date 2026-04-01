@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Most Ordered Items</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+        :root { --bg1:#0a0a0f; --accent:#ff6b35; --accent2:#f7c59f; --gold:#ffd700; --text:#f0ece3; --muted:#7a7a8a; --card-bg:rgba(255,255,255,0.045); --card-border:rgba(255,107,53,0.18); --th-bg:rgba(255,107,53,0.15); --tr-hover:rgba(255,107,53,0.07); --td-border:rgba(255,255,255,0.04); --glow:rgba(255,107,53,0.25); --row-hover:rgba(255,107,53,0.07); --input-bg:rgba(255,255,255,0.06); }
+        body.light { --bg1:#fff8f3; --accent:#e85d04; --accent2:#f4a261; --text:#1a1a2e; --muted:#888; --card-bg:rgba(255,255,255,0.9); --card-border:rgba(232,93,4,0.2); --th-bg:rgba(232,93,4,0.1); --tr-hover:rgba(232,93,4,0.05); --td-border:rgba(0,0,0,0.05); --glow:rgba(232,93,4,0.12); --row-hover:rgba(232,93,4,0.06); }
+        body { font-family:'DM Sans',sans-serif; background:var(--bg1); color:var(--text); min-height:100vh; overflow-x:hidden; transition:background 0.5s,color 0.5s; }
+        .bg-canvas { position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
+        .orb { position:absolute; border-radius:50%; filter:blur(90px); opacity:0.15; animation:drift 18s ease-in-out infinite alternate; }
+        .orb1 { width:500px; height:500px; background:#ff6b35; top:-130px; left:-100px; animation-duration:14s; }
+        .orb2 { width:360px; height:360px; background:#ff9a3c; bottom:-80px; right:-60px; animation-duration:20s; animation-delay:-6s; }
+        .orb3 { width:240px; height:240px; background:#ffcc44; top:40%; left:60%; animation-duration:17s; animation-delay:-4s; }
+        body.light .orb { opacity:0.1; }
+        @keyframes drift { 0%{transform:translate(0,0) scale(1)} 100%{transform:translate(40px,30px) scale(1.1)} }
+        body::after { content:''; position:fixed; inset:0; z-index:1; pointer-events:none; opacity:0.4; background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E"); }
+        .toggle { position:fixed; top:22px; right:26px; z-index:100; background:var(--card-bg); backdrop-filter:blur(12px); border:1px solid var(--card-border); border-radius:100px; padding:10px 20px; cursor:pointer; font-size:13px; font-family:'DM Sans',sans-serif; color:var(--text); font-weight:500; transition:all 0.3s; }
+        .toggle:hover { background:var(--accent); color:#fff; border-color:var(--accent); transform:scale(1.05); }
+        .page { position:relative; z-index:10; min-height:100vh; padding:40px; }
+        .back-link { display:inline-flex; align-items:center; gap:8px; color:var(--muted); text-decoration:none; font-size:13px; font-weight:500; padding:10px 20px; border:1px solid var(--card-border); border-radius:100px; background:var(--card-bg); backdrop-filter:blur(10px); transition:all 0.3s; margin-bottom:36px; }
+        .back-link:hover { color:#fff; background:var(--accent); border-color:var(--accent); transform:translateX(-4px); }
+        .card { background:var(--card-bg); backdrop-filter:blur(18px); border:1px solid var(--card-border); border-radius:24px; padding:36px; max-width:1200px; margin:0 auto; position:relative; overflow:hidden; animation:cardIn 0.5s ease both; box-shadow:0 20px 60px rgba(0,0,0,0.25); }
+        .card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg,var(--accent),var(--accent2),var(--gold),var(--accent)); background-size:200% 100%; animation:shimmer 3s linear infinite; }
+        .card::after { content:''; position:absolute; inset:0; background:radial-gradient(circle at 50% 0%,var(--glow) 0%,transparent 60%); pointer-events:none; border-radius:24px; }
+        @keyframes shimmer { 0%{background-position:0%} 100%{background-position:200%} }
+        .card-header { display:flex; align-items:center; gap:16px; margin-bottom:28px; padding-bottom:22px; border-bottom:1px solid var(--card-border); flex-wrap:wrap; }
+        .card-icon { width:48px; height:48px; border-radius:14px; background:linear-gradient(135deg,var(--accent),var(--accent2)); display:flex; align-items:center; justify-content:center; font-size:22px; box-shadow:0 6px 20px rgba(255,107,53,0.3); flex-shrink:0; }
+        .card-title { font-family:'Playfair Display',serif; font-size:26px; font-weight:700; background:linear-gradient(135deg,var(--text) 40%,var(--accent)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+        .card-sub { font-size:11px; letter-spacing:2px; text-transform:uppercase; color:var(--muted); margin-top:3px; }
+        .count-pill { margin-left:auto; background:rgba(255,107,53,0.12); border:1px solid var(--card-border); border-radius:100px; padding:6px 16px; font-size:12px; font-weight:600; color:var(--accent); white-space:nowrap; }
+        /* ── META BOX ── */
+        .meta-box { background:rgba(255,107,53,0.06); border:1px solid var(--card-border); border-radius:14px; margin-bottom:24px; display:flex; flex-wrap:wrap; gap:0; }
+        .meta-item { display:flex; flex-direction:column; gap:3px; flex:1; min-width:120px; padding:16px 20px; border-right:1px solid var(--card-border); }
+        .meta-item:last-child { border-right:none; }
+        .meta-label { font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); }
+        .meta-value { font-family:'Playfair Display',serif; font-size:28px; font-weight:700; color:var(--accent); }
+        .msg-box { background:rgba(255,107,53,0.07); border:1px solid rgba(255,107,53,0.2); border-radius:14px; padding:18px 22px; color:var(--accent2); font-size:14px; display:flex; align-items:center; gap:10px; margin-bottom:16px; }
+        .msg-box::before { content:'ℹ️'; font-size:18px; }
+        /* ── TABLE ── */
+        .table-wrapper { overflow-x:auto; border-radius:16px; border:1px solid var(--card-border); }
+        table { width:100%; border-collapse:collapse; font-size:14px; }
+        thead tr { background:var(--th-bg); }
+        th { padding:14px 18px; text-align:left; font-size:10.5px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--accent); white-space:nowrap; border-bottom:1px solid var(--card-border); }
+        td { padding:13px 18px; border-bottom:1px solid var(--td-border); color:var(--text); vertical-align:middle; }
+        tbody tr:last-child td { border-bottom:none; }
+        tbody tr { transition:background 0.2s; }
+        tbody tr:hover { background:var(--tr-hover); }
+        .row-anim { animation:rowIn 0.3s ease both; }
+        /* ── PAGINATION ── */
+        .pagination-bar { display:flex; align-items:center; justify-content:center; gap:8px; margin-top:28px; flex-wrap:wrap; }
+        .pg-btn { display:inline-flex; align-items:center; justify-content:center; min-width:38px; height:38px; padding:0 14px; border-radius:100px; border:1px solid var(--card-border); background:var(--card-bg); color:var(--text); font-size:13px; font-weight:500; font-family:'DM Sans',sans-serif; cursor:pointer; text-decoration:none; transition:all 0.25s; backdrop-filter:blur(8px); }
+        .pg-btn:hover:not(.disabled):not(.active) { background:rgba(255,107,53,0.15); border-color:var(--accent); color:var(--accent); transform:translateY(-1px); }
+        .pg-btn.active { background:var(--accent); border-color:var(--accent); color:#fff; font-weight:700; box-shadow:0 4px 14px rgba(255,107,53,0.4); }
+        .pg-btn.disabled { opacity:0.3; cursor:not-allowed; pointer-events:none; }
+        .pg-dots { color:var(--muted); padding:0 4px; line-height:38px; font-size:16px; }
+        .rows-select-wrap { display:flex; align-items:center; gap:10px; color:var(--muted); font-size:13px; }
+        .rows-select { background:var(--card-bg); border:1px solid var(--card-border); border-radius:100px; color:var(--text); font-size:13px; font-family:'DM Sans',sans-serif; padding:6px 14px; cursor:pointer; appearance:none; -webkit-appearance:none; backdrop-filter:blur(8px); }
+        .rows-select:focus { outline:none; border-color:var(--accent); }
+        /* ── ERROR BLOCK ── */
+        .error-wrap { background:rgba(239,68,68,0.07); border:1px solid rgba(239,68,68,0.28); border-radius:20px; overflow:hidden; margin-bottom:24px; box-shadow:0 12px 36px rgba(239,68,68,0.12); animation:cardIn 0.45s ease both; }
+        .error-header { background:rgba(239,68,68,0.13); padding:18px 26px; display:flex; align-items:center; gap:14px; border-bottom:1px solid rgba(239,68,68,0.18); }
+        .error-icon-wrap { width:44px; height:44px; border-radius:12px; flex-shrink:0; background:linear-gradient(135deg,#ef4444,#dc2626); display:flex; align-items:center; justify-content:center; font-size:20px; box-shadow:0 4px 14px rgba(239,68,68,0.4); }
+        .error-heading { font-family:'Playfair Display',serif; font-size:20px; font-weight:700; color:#ef4444; }
+        .error-heading-sub { font-size:11px; letter-spacing:2px; text-transform:uppercase; color:#f87171; margin-top:2px; opacity:0.8; }
+        .error-body { padding:20px 26px 24px; display:flex; flex-direction:column; gap:12px; }
+        .error-row { display:flex; align-items:flex-start; gap:14px; padding:13px 16px; border-radius:12px; background:rgba(239,68,68,0.06); border:1px solid rgba(239,68,68,0.12); }
+        .error-row-label { font-size:11px; font-weight:600; letter-spacing:1.2px; text-transform:uppercase; color:#f87171; min-width:72px; flex-shrink:0; padding-top:2px; }
+        .error-row-value { font-size:14px; color:#fca5a5; line-height:1.5; word-break:break-word; }
+        .error-go-back { display:inline-flex; align-items:center; gap:8px; margin-top:4px; padding:10px 20px; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.25); border-radius:100px; font-size:13px; font-weight:500; color:#f87171; text-decoration:none; transition:all 0.3s; width:fit-content; }
+        .error-go-back:hover { background:#ef4444; color:#fff; border-color:#ef4444; }
+        @keyframes cardIn { from{opacity:0;transform:translateY(22px) scale(0.97)} to{opacity:1;transform:translateY(0) scale(1)} }
+        @keyframes rowIn  { from{opacity:0;transform:translateX(-8px)} to{opacity:1;transform:translateX(0)} }
+        @media(max-width:600px){ .page{padding:20px 16px} .card{padding:22px 16px} .meta-item{min-width:calc(50% - 16px)} .pagination-bar{gap:5px} .pg-btn{min-width:32px;height:32px;font-size:12px} }
+    </style>
+</head>
+<body>
+<div class="bg-canvas"><div class="orb orb1"></div><div class="orb orb2"></div><div class="orb orb3"></div></div>
+<button class="toggle" onclick="toggleMode()">☀️ Light</button>
+<div class="page">
+    <a class="back-link" href="/menuitems">← Back to Order Items</a>
+    <div class="card">
+        <div class="card-header">
+            <div class="card-icon">🏆</div>
+            <div>
+                <div class="card-title">Most Ordered Items</div>
+                <div class="card-sub">Top Sellers</div>
+            </div>
+            <div class="count-pill" id="countPill" style="display:none"></div>
+        </div>
+
+        <!-- ERROR BLOCK -->
+        <div class="error-wrap" th:if="${error}">
+            <div class="error-header">
+                <div class="error-icon-wrap">🚫</div>
+                <div>
+                    <div class="error-heading">Something went wrong</div>
+                    <div class="error-heading-sub">API Error Response</div>
+                </div>
+            </div>
+            <div class="error-body" id="errBody"></div>
+            <span id="rawErr" th:text="${error}" style="display:none"></span>
+        </div>
+
+        <!-- NO RECORDS -->
+        <div class="msg-box" th:if="${orderItems == null or #lists.isEmpty(orderItems)}">No records found.</div>
+
+        <!-- META BOX — filled by JS -->
+        <div class="meta-box" id="metaBox" th:if="${orderItems != null and !#lists.isEmpty(orderItems)}" style="display:none">
+            <div class="meta-item">
+                <span class="meta-label">Current Page</span>
+                <span class="meta-value" id="metaCurrentPage">0</span>
+            </div>
+            <div class="meta-item">
+                <span class="meta-label">Total Pages</span>
+                <span class="meta-value" id="metaTotalPages">0</span>
+            </div>
+            <div class="meta-item">
+                <span class="meta-label">Total Elements</span>
+                <span class="meta-value" id="metaTotalElements">0</span>
+            </div>
+            <div class="meta-item">
+                <span class="meta-label">On This Page</span>
+                <span class="meta-value" id="metaOnPage">0</span>
+            </div>
+        </div>
+
+        <!-- TABLE — Thymeleaf renders ALL rows; JS shows/hides per page -->
+        <div class="table-wrapper" id="tableWrapper" th:if="${orderItems != null and !#lists.isEmpty(orderItems)}">
+            <table>
+                <thead><tr>
+                    <th>Rank</th><th>Item ID</th><th>Item Name</th>
+                    <th>Total Qty Ordered</th><th>Item Price</th>
+                </tr></thead>
+                <tbody id="mainTbody">
+                    <tr th:each="item,iter : ${orderItems}" class="data-row" th:data-rank="${iter.count}">
+                        <td><span class="rank-badge" th:text="'#' + ${iter.count}"></span></td>
+                        <td><strong th:text="${item['itemId']}" style="color:var(--accent)"></strong></td>
+                        <td style="font-weight:500" th:text="${item['itemName']}"></td>
+                        <td style="font-weight:700;color:var(--accent2)" th:text="${item['quantity']}"></td>
+                        <td th:text="'₹' + ${item['itemPrice']}"></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- PAGINATION BAR — built by JS -->
+        <div class="pagination-bar" id="paginationBar" style="display:none"></div>
+
+    </div>
+</div>
+
+<script>
+let isDark = true;
+let currentPage = 0;
+let pageSize = 5;
+let allRows = [];
+
+function toggleMode() {
+    isDark = !isDark;
+    document.body.classList.toggle('light', !isDark);
+    document.querySelector('.toggle').textContent = isDark ? '☀️ Light' : '🌙 Dark';
+}
+
+// ── Style rank badges based on position ──
+function styleRankBadges() {
+    document.querySelectorAll('.rank-badge').forEach(badge => {
+        const rank = parseInt(badge.textContent.replace('#', ''));
+        if (rank === 1) {
+            badge.style.cssText = 'background:rgba(255,215,0,0.18);border:1px solid rgba(255,215,0,0.4);border-radius:100px;padding:3px 12px;font-size:12px;font-weight:700;color:#ffd700;';
+        } else if (rank === 2) {
+            badge.style.cssText = 'background:rgba(192,192,192,0.15);border:1px solid rgba(192,192,192,0.35);border-radius:100px;padding:3px 12px;font-size:12px;font-weight:700;color:#c0c0c0;';
+        } else if (rank === 3) {
+            badge.style.cssText = 'background:rgba(205,127,50,0.15);border:1px solid rgba(205,127,50,0.35);border-radius:100px;padding:3px 12px;font-size:12px;font-weight:700;color:#cd7f32;';
+        } else {
+            badge.style.cssText = 'background:rgba(255,107,53,0.10);border:1px solid rgba(255,107,53,0.2);border-radius:100px;padding:3px 12px;font-size:12px;font-weight:600;color:var(--muted);';
+        }
+    });
+}
+
+function initPagination() {
+    styleRankBadges();
+    allRows = Array.from(document.querySelectorAll('#mainTbody .data-row'));
+    if (allRows.length === 0) return;
+
+    const pill = document.getElementById('countPill');
+    pill.textContent = allRows.length + ' records';
+    pill.style.display = 'block';
+
+    document.getElementById('metaBox').style.display = 'flex';
+    document.getElementById('metaTotalElements').textContent = allRows.length;
+    renderPage(0);
+}
+
+function renderPage(page) {
+    currentPage = page;
+    const totalPages = Math.ceil(allRows.length / pageSize);
+    allRows.forEach(r => { r.style.display = 'none'; r.classList.remove('row-anim'); });
+    const start = page * pageSize;
+    const end = Math.min(start + pageSize, allRows.length);
+    const visible = allRows.slice(start, end);
+    visible.forEach((r, i) => {
+        r.style.display = '';
+        setTimeout(() => r.classList.add('row-anim'), i * 40);
+    });
+    document.getElementById('metaCurrentPage').textContent = page;
+    document.getElementById('metaTotalPages').textContent = totalPages;
+    document.getElementById('metaOnPage').textContent = visible.length;
+    buildPaginationBar(page, totalPages);
+}
+
+function buildPaginationBar(page, totalPages) {
+    const bar = document.getElementById('paginationBar');
+    if (totalPages <= 1) { bar.style.display = 'none'; return; }
+    bar.style.display = 'flex';
+    bar.innerHTML = '';
+
+    function addBtn(label, onclick, extra) {
+        const b = document.createElement('button');
+        b.className = 'pg-btn' + (extra ? ' ' + extra : '');
+        b.innerHTML = label;
+        if (onclick && extra !== 'disabled' && extra !== 'active') b.onclick = onclick;
+        bar.appendChild(b);
+    }
+    function addDots() {
+        const s = document.createElement('span');
+        s.className = 'pg-dots'; s.textContent = '…'; bar.appendChild(s);
+    }
+
+    addBtn('« First', () => renderPage(0),           page === 0 ? 'disabled' : '');
+    addBtn('‹ Prev',  () => renderPage(page - 1),    page === 0 ? 'disabled' : '');
+    for (let i = 0; i < totalPages; i++) {
+        if (i === 0 || i === totalPages - 1 || (i >= page - 1 && i <= page + 1)) {
+            addBtn(i + 1, () => renderPage(i), i === page ? 'active' : '');
+        } else if (i === page - 2 || i === page + 2) {
+            addDots();
+        }
+    }
+    addBtn('Next ›', () => renderPage(page + 1),        page === totalPages - 1 ? 'disabled' : '');
+    addBtn('Last »', () => renderPage(totalPages - 1),  page === totalPages - 1 ? 'disabled' : '');
+
+    const wrap = document.createElement('div');
+    wrap.className = 'rows-select-wrap';
+    wrap.innerHTML = '<span>Rows:</span>';
+    const sel = document.createElement('select');
+    sel.className = 'rows-select';
+    [5, 10, 15, 20].forEach(n => {
+        const o = document.createElement('option');
+        o.value = n; o.textContent = n;
+        if (n === pageSize) o.selected = true;
+        sel.appendChild(o);
+    });
+    sel.onchange = () => { pageSize = parseInt(sel.value); renderPage(0); };
+    wrap.appendChild(sel);
+    bar.appendChild(wrap);
+}
+
+function renderError(rawId, bodyId) {
+    const rawEl = document.getElementById(rawId);
+    const bodyEl = document.getElementById(bodyId);
+    if (!rawEl || !bodyEl) return;
+    const raw = rawEl.textContent.trim();
+    if (!raw) return;
+    let status = null, message = null, errorType = null;
+    try {
+        const obj = JSON.parse(raw);
+        status = obj.status || null; errorType = obj.error || null;
+        message = obj.message || obj.detail || obj.description || obj.msg || null;
+        if (!status) status = obj.statusCode || null;
+    } catch(e) { message = raw; }
+    const labels = {400:'400 — Bad Request',401:'401 — Unauthorized',403:'403 — Forbidden',404:'404 — Not Found',500:'500 — Internal Server Error'};
+    const rows = [];
+    if (status)    rows.push({label:'Status',  icon: getIcon(status), value: labels[status] || String(status)});
+    if (errorType) rows.push({label:'Error',   icon:'🏷️', value: errorType});
+    if (message)   rows.push({label:'Message', icon:'💬', value: message});
+    if (!rows.length) rows.push({label:'Details', icon:'📄', value: raw});
+    rows.forEach(r => {
+        const d = document.createElement('div');
+        d.className = 'error-row';
+        d.innerHTML = `<span class="error-row-label">${r.icon} ${esc(r.label)}</span><span class="error-row-value">${esc(r.value)}</span>`;
+        bodyEl.appendChild(d);
+    });
+    const btn = document.createElement('a');
+    btn.className = 'error-go-back'; btn.href = 'javascript:history.back()'; btn.textContent = '← Go Back & Try Again';
+    bodyEl.appendChild(btn);
+}
+function getIcon(c) { if (c >= 500) return '🔥'; if (c === 404) return '🔍'; if (c === 403 || c === 401) return '🔒'; return '⚠️'; }
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+document.addEventListener('DOMContentLoaded', () => {
+    renderError('rawErr', 'errBody');
+    initPagination();
+});
+</script>
+</body>
+</html>

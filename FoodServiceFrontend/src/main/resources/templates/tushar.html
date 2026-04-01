@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Tushar - APIs</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root { --bg1:#0a0a0f; --accent:#ff6b35; --accent2:#f7c59f; --text:#f0ece3; --muted:#7a7a8a; --card-bg:rgba(255,255,255,0.045); --card-border:rgba(255,107,53,0.18); --glow:rgba(255,107,53,0.28); --input-bg:rgba(255,255,255,0.06); --input-border:rgba(255,107,53,0.22); }
+        body.light { --bg1:#fff8f3; --accent:#e85d04; --accent2:#f4a261; --text:#1a1a2e; --muted:#888; --card-bg:rgba(255,255,255,0.85); --card-border:rgba(232,93,4,0.2); --glow:rgba(232,93,4,0.15); --input-bg:#fff; --input-border:rgba(232,93,4,0.25); }
+        body { font-family:'DM Sans',sans-serif; background:var(--bg1); color:var(--text); min-height:100vh; overflow-x:hidden; transition:background 0.5s,color 0.5s; }
+        .bg-canvas { position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
+        .orb { position:absolute; border-radius:50%; filter:blur(90px); opacity:0.15; animation:drift 18s ease-in-out infinite alternate; }
+        .orb1 { width:500px; height:500px; background:#ff6b35; top:-130px; left:-100px; animation-duration:14s; }
+        .orb2 { width:360px; height:360px; background:#ff9a3c; bottom:-80px; right:-60px; animation-duration:20s; animation-delay:-6s; }
+        .orb3 { width:260px; height:260px; background:#ffcc44; top:45%; left:58%; animation-duration:17s; animation-delay:-3s; }
+        body.light .orb { opacity:0.1; }
+        @keyframes drift { 0%{transform:translate(0,0) scale(1)} 100%{transform:translate(40px,30px) scale(1.1)} }
+        body::after { content:''; position:fixed; inset:0; z-index:1; background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E"); opacity:0.4; pointer-events:none; }
+        .toggle { position:fixed; top:22px; right:26px; z-index:100; background:var(--card-bg); backdrop-filter:blur(12px); border:1px solid var(--card-border); border-radius:100px; padding:10px 20px; cursor:pointer; font-size:13px; font-family:'DM Sans',sans-serif; color:var(--text); font-weight:500; transition:all 0.3s; }
+        .toggle:hover { background:var(--accent); color:#fff; border-color:var(--accent); transform:scale(1.05); }
+        header { position:relative; z-index:10; padding:56px 40px 40px; text-align:center; border-bottom:1px solid var(--card-border); }
+        .header-badge { display:inline-block; background:var(--accent); color:#fff; font-size:11px; font-weight:500; letter-spacing:3px; text-transform:uppercase; padding:6px 18px; border-radius:100px; margin-bottom:18px; }
+        header h1 { font-family:'Playfair Display',serif; font-size:clamp(26px,5vw,52px); font-weight:900; background:linear-gradient(135deg,var(--text) 35%,var(--accent)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+        .back-link { position:relative; z-index:10; display:inline-flex; align-items:center; gap:8px; color:var(--muted); text-decoration:none; font-size:13px; font-weight:500; padding:10px 20px; border:1px solid var(--card-border); border-radius:100px; background:var(--card-bg); backdrop-filter:blur(10px); transition:all 0.3s; margin:28px 0 0 40px; }
+        .back-link:hover { color:#fff; background:var(--accent); border-color:var(--accent); transform:translateX(-4px); }
+        .container { position:relative; z-index:10; max-width:900px; margin:0 auto; padding:30px 40px 80px; }
+        .section-label { display:flex; align-items:center; gap:12px; font-family:'Playfair Display',serif; font-size:22px; font-weight:700; color:var(--accent); margin:40px 0 18px; }
+        .section-label::after { content:''; flex:1; height:1px; background:var(--card-border); }
+        .card { background:var(--card-bg); backdrop-filter:blur(16px); border:1px solid var(--card-border); border-radius:20px; padding:28px 30px; margin-bottom:16px; position:relative; overflow:hidden; transition:transform 0.3s,box-shadow 0.3s,border-color 0.3s; animation:cardIn 0.5s ease both; }
+        .card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,transparent,var(--accent),var(--accent2),transparent); opacity:0; transition:opacity 0.3s; }
+        .card:hover { transform:translateY(-4px); box-shadow:0 20px 50px rgba(0,0,0,0.25),0 0 0 1px var(--accent); border-color:var(--accent); }
+        .card:hover::before { opacity:1; }
+        .card h2,.card h3 { font-family:'Playfair Display',serif; font-weight:700; font-size:18px; color:var(--text); margin-bottom:18px; display:flex; align-items:center; gap:10px; }
+        .card h2::before,.card h3::before { content:''; width:4px; height:18px; border-radius:2px; background:linear-gradient(180deg,var(--accent),var(--accent2)); flex-shrink:0; }
+        .card form { display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; }
+        .card label { font-size:11px; font-weight:500; letter-spacing:1px; text-transform:uppercase; color:var(--muted); width:100%; margin-bottom:-4px; }
+        .card input { background:var(--input-bg); color:var(--text); border:1px solid var(--input-border); border-radius:10px; padding:11px 16px; font-size:14px; font-family:'DM Sans',sans-serif; min-width:200px; flex:1; transition:border-color 0.3s,box-shadow 0.3s; outline:none; }
+        .card input::placeholder { color:var(--muted); }
+        .card input:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(255,107,53,0.15); }
+        .card button { background:linear-gradient(135deg,var(--accent),#e05a28); color:#fff; border:none; border-radius:10px; padding:11px 26px; font-size:14px; font-weight:500; font-family:'DM Sans',sans-serif; cursor:pointer; transition:transform 0.2s,box-shadow 0.2s; white-space:nowrap; box-shadow:0 4px 16px rgba(255,107,53,0.35); }
+        .card button:hover { transform:translateY(-2px) scale(1.03); box-shadow:0 8px 24px rgba(255,107,53,0.5); }
+        @keyframes fadeDown { from{opacity:0;transform:translateY(-14px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes cardIn { from{opacity:0;transform:translateY(22px) scale(0.97)} to{opacity:1;transform:translateY(0) scale(1)} }
+        @media(max-width:600px){.container{padding:20px 16px 60px}.back-link{margin-left:16px}.card input{min-width:100%}} to{opacity:1;transform:translateY(0)} }
+
+        /* ── Validation styles ── */
+        .input-error {
+            border-color: #ef4444 !important;
+            box-shadow: 0 0 0 3px rgba(239,68,68,0.20) !important;
+            animation: shake 0.35s ease;
+        }
+        @keyframes shake {
+            0%,100%{transform:translateX(0)}
+            25%{transform:translateX(-6px)}
+            75%{transform:translateX(6px)}
+        }
+        .val-msg {
+            width: 100%;
+            font-size: 11.5px;
+            color: #f87171;
+            font-weight: 500;
+            margin-top: -2px;
+            margin-bottom: 2px;
+            padding-left: 4px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            animation: valFadeIn 0.2s ease;
+        }
+        body.light .val-msg { color: #dc2626; }
+        @keyframes valFadeIn { from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:translateY(0)} }
+    </style>
+</head>
+<body>
+<div class="bg-canvas"><div class="orb orb1"></div><div class="orb orb2"></div><div class="orb orb3"></div></div>
+<button class="toggle" onclick="toggleMode()">☀️ Light</button>
+
+<header>
+    <div class="header-badge">API Showcase</div>
+    <h1>Tushar — Restaurant &amp; Ratings</h1>
+</header>
+
+<a href="/" class="back-link">← Back to Home</a>
+
+<div class="container">
+
+    <div class="section-label">🍽️ Restaurant APIs</div>
+
+    <div class="card"><h2>Get All Restaurants</h2><form action="/restaurant/getAll" method="post"><button type="submit">Fetch All</button></form></div>
+    <div class="card"><h2>Get Restaurant By ID</h2><form action="/restaurant/getById" method="post"><input type="number" step="1" name="id" placeholder="Restaurant ID" required><button type="submit">Search</button></form></div>
+    <div class="card"><h2>Search By Name</h2><form action="/restaurant/searchByName" method="post"><input type="text" name="name" placeholder="Restaurant Name" required><button type="submit">Search</button></form></div>
+    <div class="card"><h2>Search By Address</h2><form action="/restaurant/searchByAddress" method="post"><input type="text" name="address" placeholder="Address" required><button type="submit">Search</button></form></div>
+    <div class="card"><h2>Search By Phone</h2><form action="/restaurant/searchByPhone" method="post"><input type="text" name="phone" placeholder="Phone Number" required><button type="submit">Search</button></form></div>
+
+    <div class="card"><h2>Create Restaurant</h2>
+        <form action="/restaurant/create" method="post">
+            <label>Name</label><input type="text" name="restaurantName" placeholder="Restaurant Name" required>
+            <label>Address</label><input type="text" name="restaurantAddress" placeholder="Address" required>
+            <label>Phone</label><input type="text" name="restaurantPhone" placeholder="Phone" required>
+            <button type="submit">Create</button>
+        </form>
+    </div>
+
+    <div class="card"><h2>Update Restaurant</h2>
+        <form action="/restaurant/update" method="post">
+            <label>ID</label><input type="number" step="1" name="id" placeholder="Restaurant ID" required>
+            <label>Name</label><input type="text" name="restaurantName" placeholder="Name" th:value="${single != null ? single.restaurantName : ''}">
+            <label>Address</label><input type="text" name="restaurantAddress" placeholder="Address" th:value="${single != null ? single.restaurantAddress : ''}">
+            <label>Phone</label><input type="text" name="restaurantPhone" placeholder="Phone" th:value="${single != null ? single.restaurantPhone : ''}">
+            <button type="submit">Update</button>
+        </form>
+    </div>
+
+    <div class="card"><h2>Delete Restaurant</h2><form action="/restaurant/delete" method="post"><input type="number" step="1" name="id" placeholder="Restaurant ID" required><button type="submit">Delete</button></form></div>
+    <div class="card"><h2>Get Ratings of Restaurant</h2><form action="/restaurant/ratings" method="post"><input type="number" step="1" name="id" placeholder="Restaurant ID" required><button type="submit">Fetch Ratings</button></form></div>
+    <div class="card"><h2>Get Menu Items By Restaurant</h2><form action="/restaurant/menuitems" method="post"><input type="number" step="1" name="id" placeholder="Restaurant ID" required><button type="submit">Fetch Menu Items</button></form></div>
+
+    <div class="section-label">⭐ Ratings APIs</div>
+
+    <div class="card"><h2>Create Rating</h2>
+        <form action="/ratings/create" method="post">
+            <label>Rating</label><input type="number" step="1" name="rating" placeholder="Rating value" required>
+            <label>Review</label><input type="text" name="review" placeholder="Write a review">
+            <label>Restaurant ID</label><input type="number" step="1" name="restaurantId" placeholder="Restaurant ID" required>
+            <label>Order ID</label><input type="number" step="1" name="orderId" placeholder="Order ID" required>
+            <button type="submit">Create</button>
+        </form>
+    </div>
+
+    <div class="card"><h2>Get All Ratings</h2><form action="/ratings/getAll" method="post"><button type="submit">Fetch All</button></form></div>
+    <div class="card"><h2>Get Rating By ID</h2><form action="/ratings/getById" method="post"><input type="number" step="1" name="id" placeholder="Rating ID" required><button type="submit">Search</button></form></div>
+    <div class="card"><h2>Get Ratings By Restaurant</h2><form action="/ratings/byRestaurant" method="post"><input type="number" step="1" name="restaurantId" placeholder="Restaurant ID" required><button type="submit">Search</button></form></div>
+    <div class="card"><h2>Get Ratings By Order</h2><form action="/ratings/byOrder" method="post"><input type="number" step="1" name="orderId" placeholder="Order ID" required><button type="submit">Search</button></form></div>
+    <div class="card"><h2>Get By Rating Value</h2><form action="/ratings/byValue" method="post"><input type="number" step="1" name="rating" placeholder="Rating value" required><button type="submit">Search</button></form></div>
+
+    <div class="card"><h2>Update Rating</h2>
+        <form action="/ratings/update" method="post">
+            <label>Rating ID</label><input type="number" step="1" name="id" placeholder="Rating ID" required>
+            <label>New Rating</label><input type="number" step="1" name="rating" placeholder="New Rating">
+            <label>New Review</label><input type="text" name="review" placeholder="New Review">
+            <button type="submit">Update</button>
+        </form>
+    </div>
+
+    <div class="card"><h2>Delete Rating</h2><form action="/ratings/delete" method="post"><input type="number" step="1" name="id" placeholder="Rating ID" required><button type="submit">Delete</button></form></div>
+    <div class="card"><h2>Get All Flat Ratings</h2><form action="/ratings/flat" method="post"><button type="submit">Fetch Flat</button></form></div>
+    <div class="card"><h2>Get Flat Rating By ID</h2><form action="/ratings/flatById" method="post"><input type="number" step="1" name="id" placeholder="Rating ID" required><button type="submit">Search</button></form></div>
+
+</div>
+<script>let d=true;function toggleMode(){d=!d;document.body.classList.toggle('light',!d);document.querySelector('.toggle').textContent=d?'☀️ Light':'🌙 Dark';}</script>
+
+
+
+
+<script>
+// ═══════════════════════════════════════════════════════
+//   COMPLETE VALIDATION ENGINE — all fields, all forms
+// ═══════════════════════════════════════════════════════
+
+function _showErr(inp, msg) {
+    _clearErr(inp);
+    inp.classList.add('input-error');
+    const d = document.createElement('div');
+    d.className = 'val-msg';
+    d.innerHTML = '<span>⚠</span> ' + msg;
+    inp.insertAdjacentElement('afterend', d);
+}
+function _clearErr(inp) {
+    inp.classList.remove('input-error');
+    const n = inp.nextElementSibling;
+    if (n && n.classList.contains('val-msg')) n.remove();
+}
+function _clearAll(form) {
+    form.querySelectorAll('.input-error').forEach(i => i.classList.remove('input-error'));
+    form.querySelectorAll('.val-msg').forEach(e => e.remove());
+}
+
+function _validateOne(inp) {
+    const raw  = inp.value;
+    const val  = raw.trim();
+    const type = inp.type;
+    const name = (inp.name || inp.id || '').toLowerCase();
+    const req  = inp.hasAttribute('required');
+
+    _clearErr(inp);
+
+    // ── Required ──────────────────────────────────────────────
+    if (req && val === '') {
+        _showErr(inp, 'This field is required.');
+        return false;
+    }
+    if (val === '') return true; // optional & empty → skip
+
+    // ══════════════════════════════════════════════════════════
+    //  TEXT / STRING FIELDS — must not be purely numeric
+    // ══════════════════════════════════════════════════════════
+
+    // Name fields (restaurantName, itemName, customerName, driverName, name)
+    if (['restaurantname','itemname','itemdescription','name',
+         'drivername','vehicle','review','address',
+         'restaurantaddress','line1','line2','city','state',
+         'updatename','updateline1','updateline2','updatecity','updatestate',
+         'updateline1'].includes(name) ||
+        (name.endsWith('name') && type === 'text') ||
+        name === 'address' || name === 'restaurantaddress') {
+
+        // Must not be purely a number
+        if (/^\d+$/.test(val)) {
+            _showErr(inp, 'This field must contain letters, not just numbers.');
+            return false;
+        }
+        // Must not be only special chars
+        if (!/[a-zA-Z]/.test(val)) {
+            _showErr(inp, 'Must contain at least one letter.');
+            return false;
+        }
+        // Min length
+        if (val.length < 2) {
+            _showErr(inp, 'Must be at least 2 characters.');
+            return false;
+        }
+        // For name fields: no special characters except spaces, dots, hyphens
+        if (['name','restaurantname','itemname','updatename'].includes(name)) {
+            if (!/^[a-zA-Z0-9\s.\-'&]+$/.test(val)) {
+                _showErr(inp, 'No special characters allowed except . - \' &');
+                return false;
+            }
+        }
+        return true; // passed all text checks, skip number checks below
+    }
+
+    // City & State — letters + spaces only
+    if (['city','state','updatecity','updatestate'].includes(name)) {
+        if (/^\d+$/.test(val)) { _showErr(inp, 'City/State cannot be a number.'); return false; }
+        if (!/^[a-zA-Z\s\-]+$/.test(val)) { _showErr(inp, 'Use letters only (no digits or special chars).'); return false; }
+        if (val.length < 2) { _showErr(inp, 'Must be at least 2 characters.'); return false; }
+        return true;
+    }
+
+    // Vehicle — must have letters
+    if (name === 'vehicle') {
+        if (!/[a-zA-Z]/.test(val)) { _showErr(inp, 'Vehicle must contain letters (e.g. Honda Activa).'); return false; }
+        if (val.length < 2) { _showErr(inp, 'Must be at least 2 characters.'); return false; }
+        return true;
+    }
+
+    // Review — any text but not only numbers
+    if (name === 'review') {
+        if (/^\d+$/.test(val)) { _showErr(inp, 'Review must be text, not just a number.'); return false; }
+        if (val.length < 3) { _showErr(inp, 'Review must be at least 3 characters.'); return false; }
+        return true;
+    }
+
+    // Address line 1/2
+    if (name.includes('line1') || name.includes('line2') || name === 'address' || name.includes('restaurantaddress')) {
+        if (/^\d+$/.test(val)) { _showErr(inp, 'Address must contain letters, not just numbers.'); return false; }
+        if (!/[a-zA-Z]/.test(val)) { _showErr(inp, 'Address must contain letters.'); return false; }
+        return true;
+    }
+
+    // Coupon code — alphanumeric
+    if (name === 'code' || name.includes('couponcode')) {
+        if (!/^[A-Za-z0-9_\-]+$/.test(val)) {
+            _showErr(inp, 'Coupon code: letters, numbers, _ or - only.');
+            return false;
+        }
+        if (val.length < 3) { _showErr(inp, 'Code must be at least 3 characters.'); return false; }
+        return true;
+    }
+
+    // ── Field field (sort) — must be a valid Java field name ──
+    if (name === 'field') {
+        const allowed = ['itemprice','itemname','itemid','restaurantid','itemdescription'];
+        if (!/^[a-zA-Z][a-zA-Z0-9]*$/.test(val)) {
+            _showErr(inp, 'Field name must start with a letter and contain no spaces.');
+            return false;
+        }
+        return true;
+    }
+
+    // ── Direction ─────────────────────────────────────────────
+    if (name === 'direction') {
+        if (!['asc','desc'].includes(val.toLowerCase())) {
+            _showErr(inp, 'Direction must be "asc" or "desc".');
+            return false;
+        }
+        return true;
+    }
+
+    // ══════════════════════════════════════════════════════════
+    //  EMAIL
+    // ══════════════════════════════════════════════════════════
+    if (type === 'email' || name.includes('email')) {
+        if (/^\d+$/.test(val)) { _showErr(inp, 'Email cannot be just a number.'); return false; }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(val)) {
+            _showErr(inp, 'Enter a valid email (e.g. user@example.com).');
+            return false;
+        }
+        return true;
+    }
+
+    // ══════════════════════════════════════════════════════════
+    //  PHONE
+    // ══════════════════════════════════════════════════════════
+    if (name.includes('phone')) {
+        const ph = val.replace(/[\s\-().+]/g, '');
+        if (!/^\d{7,15}$/.test(ph)) {
+            _showErr(inp, 'Phone: 7–15 digits only. No letters or special characters.');
+            return false;
+        }
+        return true;
+    }
+
+    // ══════════════════════════════════════════════════════════
+    //  POSTAL CODE
+    // ══════════════════════════════════════════════════════════
+    if (name.includes('postal') || name === 'updatepostal') {
+        if (!/^\d{4,10}$/.test(val)) {
+            _showErr(inp, 'Postal code: 4–10 digits, numbers only.');
+            return false;
+        }
+        return true;
+    }
+
+    // ══════════════════════════════════════════════════════════
+    //  STATUS / ORDER STATUS
+    // ══════════════════════════════════════════════════════════
+    if (name === 'status' || name === 'orderstatus') {
+        const validStatus = ['pending','delivered','cancelled','active','assigned','completed'];
+        if (/^\d+$/.test(val)) { _showErr(inp, 'Status cannot be a number.'); return false; }
+        if (!validStatus.includes(val.toLowerCase())) {
+            _showErr(inp, 'Valid values: PENDING, DELIVERED, CANCELLED, ACTIVE, ASSIGNED, COMPLETED');
+            return false;
+        }
+        return true;
+    }
+
+    // ══════════════════════════════════════════════════════════
+    //  DATE / DATETIME
+    // ══════════════════════════════════════════════════════════
+    if ((name.includes('date') || name === 'startdate' || name === 'enddate') && !name.includes('expiry')) {
+        if (/^\d{1,4}$/.test(val)) { _showErr(inp, 'Enter a full date: YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS'); return false; }
+        if (!/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2})?)?$/.test(val)) {
+            _showErr(inp, 'Format: YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS (e.g. 2026-03-30T10:30:00)');
+            return false;
+        }
+        const d = new Date(val.split('T')[0]);
+        if (isNaN(d.getTime())) { _showErr(inp, 'Invalid date value.'); return false; }
+        return true;
+    }
+
+    // ══════════════════════════════════════════════════════════
+    //  RATING (1–5)
+    // ══════════════════════════════════════════════════════════
+    if (name === 'rating') {
+        const n = parseInt(val, 10);
+        if (isNaN(n) || !Number.isInteger(+val)) { _showErr(inp, 'Rating must be a whole number.'); return false; }
+        if (n < 1 || n > 5) { _showErr(inp, 'Rating must be between 1 and 5.'); return false; }
+        return true;
+    }
+
+    // ══════════════════════════════════════════════════════════
+    //  PRICE (itemPrice, price)
+    // ══════════════════════════════════════════════════════════
+    if (name === 'itemprice' || name === 'price') {
+        const n = parseFloat(val);
+        if (isNaN(n))   { _showErr(inp, 'Price must be a number.'); return false; }
+        if (n < 1)      { _showErr(inp, 'Price must be at least ₹1.'); return false; }
+        if (n > 1000000){ _showErr(inp, 'Price is unrealistically high.'); return false; }
+        return true;
+    }
+
+    // ══════════════════════════════════════════════════════════
+    //  DISCOUNT
+    // ══════════════════════════════════════════════════════════
+    if (name.includes('discount')) {
+        const n = parseFloat(val);
+        if (isNaN(n))   { _showErr(inp, 'Discount must be a number.'); return false; }
+        if (n < 0)      { _showErr(inp, 'Discount cannot be negative.'); return false; }
+        if (n > 100000) { _showErr(inp, 'Discount value is too high.'); return false; }
+        return true;
+    }
+
+    // ══════════════════════════════════════════════════════════
+    //  MIN / MAX (price or discount ranges)
+    // ══════════════════════════════════════════════════════════
+    if (name === 'min' || name === 'max') {
+        const n = parseFloat(val);
+        if (isNaN(n)) { _showErr(inp, 'Must be a valid number.'); return false; }
+        if (n < 0)    { _showErr(inp, 'Cannot be negative.'); return false; }
+        return true;
+    }
+
+    // ══════════════════════════════════════════════════════════
+    //  PAGE / SIZE
+    // ══════════════════════════════════════════════════════════
+    if (name === 'page') {
+        const n = parseInt(val, 10);
+        if (isNaN(n) || !Number.isInteger(+val)) { _showErr(inp, 'Page must be a whole number (0 or more).'); return false; }
+        if (n < 0) { _showErr(inp, 'Page cannot be negative.'); return false; }
+        return true;
+    }
+    if (name === 'size') {
+        const n = parseInt(val, 10);
+        if (isNaN(n) || !Number.isInteger(+val)) { _showErr(inp, 'Size must be a whole number.'); return false; }
+        if (n < 1) { _showErr(inp, 'Size must be at least 1.'); return false; }
+        return true;
+    }
+
+    // ══════════════════════════════════════════════════════════
+    //  GENERIC NUMBER/ID FIELDS (type="number", not caught above)
+    // ══════════════════════════════════════════════════════════
+    if (type === 'number') {
+        const n = Number(val);
+        if (isNaN(n))               { _showErr(inp, 'Must be a valid number.'); return false; }
+        if (!Number.isInteger(n))   { _showErr(inp, 'Must be a whole number (no decimals).'); return false; }
+        if (n < 0)                  { _showErr(inp, 'Value cannot be negative.'); return false; }
+        if (n === 0 && (name.includes('id') || name === 'quantity')) {
+            _showErr(inp, 'Must be greater than 0.');
+            return false;
+        }
+        return true;
+    }
+
+    // ── Driver ID (text type but must be positive integer) ────
+    if (name === 'id' && type === 'text') {
+        // aditya: driver create uses type=text for id
+        const n = Number(val);
+        if (isNaN(n) || !Number.isInteger(n) || n <= 0) {
+            _showErr(inp, 'Driver ID must be a positive whole number.');
+            return false;
+        }
+        return true;
+    }
+
+    return true;
+}
+
+// ── Cross-field checks ───────────────────────────────────
+function _crossCheck(form) {
+    let ok = true;
+    // min <= max
+    const minEl = form.querySelector('[name="min"]');
+    const maxEl = form.querySelector('[name="max"]');
+    if (minEl && maxEl && minEl.value !== '' && maxEl.value !== '') {
+        if (parseFloat(minEl.value) > parseFloat(maxEl.value)) {
+            _showErr(maxEl, 'Max must be ≥ Min.');
+            ok = false;
+        }
+    }
+    // startDate <= endDate
+    const sd = form.querySelector('[name="startDate"]');
+    const ed = form.querySelector('[name="endDate"]');
+    if (sd && ed && sd.value && ed.value) {
+        if (new Date(sd.value) > new Date(ed.value)) {
+            _showErr(ed, 'End date must be on or after start date.');
+            ok = false;
+        }
+    }
+    return ok;
+}
+
+// ── Main form validator ──────────────────────────────────
+function validateForm(form) {
+    _clearAll(form);
+    let ok = true;
+    form.querySelectorAll('input').forEach(inp => {
+        if (!_validateOne(inp)) ok = false;
+    });
+    if (!_crossCheck(form)) ok = false;
+    if (!ok) {
+        const first = form.querySelector('.input-error');
+        if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    return ok;
+}
+
+// ── Wire up all forms ────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.card form').forEach(form => {
+        form.querySelectorAll('input').forEach(inp => {
+            inp.addEventListener('blur',  () => _validateOne(inp));
+            inp.addEventListener('input', () => {
+                if (inp.classList.contains('input-error')) _validateOne(inp);
+            });
+        });
+        form.addEventListener('submit', e => {
+            if (!validateForm(form)) e.preventDefault();
+        });
+    });
+});
+</script>
+</body>
+</html>

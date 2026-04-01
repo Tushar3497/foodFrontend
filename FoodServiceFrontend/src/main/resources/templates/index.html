@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Food Delivery System - Team</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg1: #0a0a0f;
+            --bg2: #12121a;
+            --accent: #ff6b35;
+            --accent2: #f7c59f;
+            --gold: #ffd700;
+            --text: #f0ece3;
+            --muted: #888;
+            --card-bg: rgba(255,255,255,0.04);
+            --card-border: rgba(255,107,53,0.18);
+            --glow: rgba(255,107,53,0.35);
+        }
+
+        body.light {
+            --bg1: #fff8f3;
+            --bg2: #fef1e8;
+            --accent: #e85d04;
+            --accent2: #f4a261;
+            --text: #1a1a2e;
+            --muted: #888;
+            --card-bg: rgba(255,255,255,0.8);
+            --card-border: rgba(232,93,4,0.2);
+            --glow: rgba(232,93,4,0.2);
+        }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg1);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+            transition: background 0.5s, color 0.5s;
+        }
+
+        /* ── Animated background ── */
+        .bg-canvas {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.18;
+            animation: drift 18s ease-in-out infinite alternate;
+        }
+
+        .orb1 { width: 520px; height: 520px; background: #ff6b35; top: -120px; left: -100px; animation-duration: 14s; }
+        .orb2 { width: 380px; height: 380px; background: #ff9a3c; bottom: -80px; right: -60px; animation-duration: 20s; animation-delay: -6s; }
+        .orb3 { width: 280px; height: 280px; background: #ffcc44; top: 40%; left: 55%; animation-duration: 17s; animation-delay: -3s; }
+
+        body.light .orb { opacity: 0.12; }
+
+        @keyframes drift {
+            0%   { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(40px, 30px) scale(1.12); }
+        }
+
+        /* ── Noise grain overlay ── */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E");
+            opacity: 0.45;
+            pointer-events: none;
+        }
+
+        /* ── Header ── */
+        header {
+            position: relative;
+            z-index: 10;
+            padding: 64px 40px 48px;
+            text-align: center;
+        }
+
+        .header-badge {
+            display: inline-block;
+            background: var(--accent);
+            color: #fff;
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            padding: 6px 18px;
+            border-radius: 100px;
+            margin-bottom: 22px;
+            animation: fadeDown 0.6s ease both;
+        }
+
+        h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(36px, 6vw, 72px);
+            font-weight: 900;
+            line-height: 1.08;
+            background: linear-gradient(135deg, var(--text) 30%, var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: fadeDown 0.7s 0.1s ease both;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+        }
+
+        .burger-icon {
+            flex-shrink: 0;
+            filter: drop-shadow(0 4px 14px rgba(255,107,53,0.55));
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50%       { transform: translateY(-7px); }
+        }
+
+        .sub {
+            color: var(--muted);
+            font-size: 15px;
+            font-weight: 300;
+            letter-spacing: 1.5px;
+            margin-top: 12px;
+            text-transform: uppercase;
+            animation: fadeDown 0.7s 0.2s ease both;
+        }
+
+        .divider {
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent), var(--accent2));
+            border-radius: 2px;
+            margin: 22px auto 0;
+            animation: fadeDown 0.7s 0.3s ease both;
+        }
+
+        /* ── Toggle ── */
+        .toggle {
+            position: fixed;
+            top: 22px;
+            right: 26px;
+            z-index: 100;
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--card-border);
+            border-radius: 100px;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 13px;
+            font-family: 'DM Sans', sans-serif;
+            color: var(--text);
+            font-weight: 500;
+            transition: all 0.3s;
+            letter-spacing: 0.5px;
+        }
+
+        .toggle:hover {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent);
+            transform: scale(1.05);
+        }
+
+        /* ── Grid ── */
+        .container {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            padding: 40px 80px 80px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        /* ── Card ── */
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--card-border);
+            border-radius: 22px;
+            padding: 24px 40px;
+            text-align: left;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            gap: 30px;
+            transition: transform 0.38s cubic-bezier(.23,1,.32,1), box-shadow 0.38s ease, border-color 0.3s;
+            animation: cardIn 0.6s ease both;
+        }
+
+        .card:nth-child(1) { animation-delay: 0.1s; }
+        .card:nth-child(2) { animation-delay: 0.2s; }
+        .card:nth-child(3) { animation-delay: 0.3s; }
+        .card:nth-child(4) { animation-delay: 0.4s; }
+        .card:nth-child(5) { animation-delay: 0.5s; }
+
+        /* Shimmer top line */
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent), var(--accent2), transparent);
+            opacity: 0;
+            transition: opacity 0.35s;
+        }
+
+        /* Glow spotlight on hover */
+        .card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 50% 0%, var(--glow) 0%, transparent 65%);
+            opacity: 0;
+            transition: opacity 0.45s;
+            border-radius: 24px;
+            pointer-events: none;
+        }
+
+        .card:hover {
+            transform: translateY(-16px) scale(1.03);
+            box-shadow: 0 32px 60px rgba(0,0,0,0.35), 0 0 0 1px var(--accent);
+            border-color: var(--accent);
+        }
+
+        .card:hover::before { opacity: 1; }
+        .card:hover::after  { opacity: 1; }
+
+        /* Avatar ring */
+        .avatar-wrap {
+            position: relative;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+
+        .avatar-ring {
+            position: absolute;
+            inset: -5px;
+            border-radius: 50%;
+            background: conic-gradient(var(--accent), var(--accent2), var(--gold), var(--accent));
+            opacity: 0;
+            transition: opacity 0.35s, transform 0.5s;
+            animation: spin 4s linear infinite;
+        }
+
+        .card:hover .avatar-ring { opacity: 1; }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .avatar-inner {
+            position: relative;
+            z-index: 1;
+            width: 96px;
+            height: 96px;
+            border-radius: 50%;
+            background: var(--bg2);
+            padding: 3px;
+        }
+
+        .card img {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            object-fit: cover;
+            display: block;
+            transition: transform 0.4s cubic-bezier(.23,1,.32,1);
+            position: relative;
+            z-index: 2;
+        }
+
+        .card:hover img {
+            transform: translateY(-6px) scale(1.08);
+        }
+
+        .card-info {
+            flex: 1;
+        }
+
+        .name {
+            font-family: 'Playfair Display', serif;
+            font-size: 26px;
+            font-weight: 700;
+            color: var(--text);
+            transition: color 0.3s;
+        }
+
+        .card:hover .name { color: var(--accent); }
+
+        .role {
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 400;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin-top: 6px;
+            line-height: 1.5;
+        }
+
+        .card-number {
+            font-family: 'Playfair Display', serif;
+            font-size: 52px;
+            font-weight: 900;
+            color: var(--accent);
+            opacity: 0.12;
+            line-height: 1;
+            transition: opacity 0.3s;
+            min-width: 60px;
+            text-align: right;
+        }
+
+        .card:hover .card-number { opacity: 0.22; }
+
+        .card-arrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            margin-top: 10px;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--accent);
+            letter-spacing: 0.5px;
+            opacity: 0;
+            transform: translateX(-6px);
+            transition: opacity 0.3s, transform 0.3s;
+        }
+
+        .card:hover .card-arrow {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        /* ── Footer ── */
+        footer {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+            padding: 22px;
+            font-size: 13px;
+            color: var(--muted);
+            letter-spacing: 0.5px;
+            border-top: 1px solid rgba(255,255,255,0.05);
+        }
+
+        footer span { color: var(--accent); }
+
+        /* ── Animations ── */
+        @keyframes fadeDown {
+            from { opacity: 0; transform: translateY(-18px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes cardIn {
+            from { opacity: 0; transform: translateY(30px) scale(0.96); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 600px) {
+            .container { padding: 20px 16px 60px; gap: 14px; }
+            header { padding: 80px 20px 36px; }
+            .card { padding: 18px 22px; gap: 18px; }
+            .card-number { font-size: 36px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="bg-canvas">
+    <div class="orb orb1"></div>
+    <div class="orb orb2"></div>
+    <div class="orb orb3"></div>
+</div>
+
+<button class="toggle" onclick="toggleMode()">☀️ Light</button>
+
+<header>
+    <div class="header-badge">Team Project · API Showcase</div>
+    <h1>
+        <svg class="burger-icon" width="58" height="58" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <ellipse cx="32" cy="14" rx="22" ry="8" fill="#f0a040"/>
+            <ellipse cx="32" cy="11" rx="20" ry="6" fill="#f5b84a"/>
+            <ellipse cx="26" cy="10" rx="2.2" ry="1.2" fill="#c97a20" transform="rotate(-15 26 10)"/>
+            <ellipse cx="34" cy="8.5" rx="2.2" ry="1.2" fill="#c97a20" transform="rotate(10 34 8.5)"/>
+            <ellipse cx="41" cy="11" rx="2" ry="1.1" fill="#c97a20" transform="rotate(-8 41 11)"/>
+            <rect x="9" y="22" width="46" height="5" rx="2.5" fill="#4caf50"/>
+            <ellipse cx="14" cy="22" rx="5" ry="3.5" fill="#66bb6a"/>
+            <ellipse cx="24" cy="21" rx="5" ry="3.5" fill="#66bb6a"/>
+            <ellipse cx="34" cy="21.5" rx="5" ry="3.5" fill="#66bb6a"/>
+            <ellipse cx="44" cy="22" rx="5" ry="3.5" fill="#66bb6a"/>
+            <ellipse cx="52" cy="22" rx="4" ry="3" fill="#66bb6a"/>
+            <rect x="10" y="26" width="44" height="4" rx="2" fill="#ef5350"/>
+            <rect x="8" y="29" width="48" height="5" rx="2" fill="#ffd54f"/>
+            <polygon points="6,29 58,29 60,34 4,34" fill="#ffca28"/>
+            <rect x="9" y="33" width="46" height="9" rx="4" fill="#6d3a1f"/>
+            <rect x="9" y="33" width="46" height="4.5" rx="3" fill="#7e4424"/>
+            <rect x="9" y="41" width="46" height="8" rx="4" fill="#e8852a"/>
+            <rect x="9" y="46" width="46" height="4" rx="2" fill="#d4721e"/>
+        </svg>
+        Food Delivery System
+    </h1>
+    <p class="sub">Meet the engineers behind the magic</p>
+    <div class="divider"></div>
+</header>
+
+<div class="container">
+
+    <div class="card" onclick="location.href='/nikhil'">
+        <div class="avatar-wrap">
+            <div class="avatar-ring"></div>
+            <div class="avatar-inner">
+                <img th:src="@{/images/nikhil.jpeg}" onclick="event.stopPropagation(); location.href='/nikhil'" alt="Nikhil">
+            </div>
+        </div>
+        <div class="card-info">
+            <div class="name">Nikhil</div>
+            <div class="role">OrderItems &amp; MenuItems</div>
+            <div class="card-arrow">View APIs →</div>
+        </div>
+         <div class="card-number">01</div>
+    </div>
+
+    <div class="card" onclick="location.href='/tushar'">
+        <div class="avatar-wrap">
+            <div class="avatar-ring"></div>
+            <div class="avatar-inner">
+                <img th:src="@{/images/tushar.jpeg}" onclick="event.stopPropagation(); location.href='/tushar'" alt="Tushar">
+            </div>
+        </div>
+        <div class="card-info">
+            <div class="name">Tushar</div>
+            <div class="role">Ratings &amp; Restaurant</div>
+            <div class="card-arrow">View APIs →</div>
+        </div>
+         <div class="card-number">02</div> 
+    </div>
+
+    <div class="card" onclick="location.href='/madhurima'">
+        <div class="avatar-wrap">
+            <div class="avatar-ring"></div>
+            <div class="avatar-inner">
+                <img th:src="@{/images/madhurimav2.jpeg}" onclick="event.stopPropagation(); location.href='/madhurimav2'" alt="Madhurima">
+            </div>
+        </div>
+        <div class="card-info">
+            <div class="name">Madhurima</div>
+            <div class="role">Coupons &amp; OrderCoupons</div>
+            <div class="card-arrow">View APIs →</div>
+        </div>
+         <div class="card-number">03</div> 
+    </div>
+
+    <div class="card" onclick="location.href='/diptyanil'">
+        <div class="avatar-wrap">
+            <div class="avatar-ring"></div>
+            <div class="avatar-inner">
+                <img th:src="@{/images/diptyanil.jpeg}" onclick="event.stopPropagation(); location.href='/diptyanil'" alt="Diptyanil">
+            </div>
+        </div>
+        <div class="card-info">
+            <div class="name">Diptyanil</div>
+            <div class="role">Customers &amp; Address</div>
+            <div class="card-arrow">View APIs →</div>
+        </div>
+        <div class="card-number">04</div> 
+    </div>
+
+    <div class="card" onclick="location.href='/aditya'">
+        <div class="avatar-wrap">
+            <div class="avatar-ring"></div>
+            <div class="avatar-inner">
+                <img th:src="@{/images/aditya.jpeg}" onclick="event.stopPropagation(); location.href='/aditya'" alt="Aditya">
+            </div>
+        </div>
+        <div class="card-info">
+            <div class="name">Aditya</div>
+            <div class="role">Orders &amp; DeliveryDrivers</div>
+            <div class="card-arrow">View APIs →</div>
+        </div>
+        <div class="card-number">05</div>
+    </div>
+
+</div>
+
+<footer>
+    <p>© 2026 <span>Food Delivery System</span></p>
+</footer>
+
+<script>
+    let isDark = true;
+    function toggleMode() {
+        isDark = !isDark;
+        document.body.classList.toggle('light', !isDark);
+        document.querySelector('.toggle').textContent = isDark ? '☀️ Light' : '🌙 Dark';
+    }
+</script>
+
+</body>
+</html>

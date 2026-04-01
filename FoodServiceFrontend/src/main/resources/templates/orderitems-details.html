@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Order Item Details</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+        :root { --bg1:#0a0a0f; --accent:#ff6b35; --accent2:#f7c59f; --gold:#ffd700; --text:#f0ece3; --muted:#7a7a8a; --card-bg:rgba(255,255,255,0.045); --card-border:rgba(255,107,53,0.18); --th-bg:rgba(255,107,53,0.15); --tr-hover:rgba(255,107,53,0.07); --td-border:rgba(255,255,255,0.04); --glow:rgba(255,107,53,0.25); --row-hover:rgba(255,107,53,0.07); --input-bg:rgba(255,255,255,0.06); }
+        body.light { --bg1:#fff8f3; --accent:#e85d04; --accent2:#f4a261; --text:#1a1a2e; --muted:#888; --card-bg:rgba(255,255,255,0.9); --card-border:rgba(232,93,4,0.2); --th-bg:rgba(232,93,4,0.1); --tr-hover:rgba(232,93,4,0.05); --td-border:rgba(0,0,0,0.05); --glow:rgba(232,93,4,0.12); --row-hover:rgba(232,93,4,0.06); }
+        body { font-family:'DM Sans',sans-serif; background:var(--bg1); color:var(--text); min-height:100vh; overflow-x:hidden; transition:background 0.5s,color 0.5s; }
+        .bg-canvas { position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
+        .orb { position:absolute; border-radius:50%; filter:blur(90px); opacity:0.15; animation:drift 18s ease-in-out infinite alternate; }
+        .orb1 { width:500px; height:500px; background:#ff6b35; top:-130px; left:-100px; animation-duration:14s; }
+        .orb2 { width:360px; height:360px; background:#ff9a3c; bottom:-80px; right:-60px; animation-duration:20s; animation-delay:-6s; }
+        .orb3 { width:240px; height:240px; background:#ffcc44; top:40%; left:60%; animation-duration:17s; animation-delay:-4s; }
+        body.light .orb { opacity:0.1; }
+        @keyframes drift { 0%{transform:translate(0,0) scale(1)} 100%{transform:translate(40px,30px) scale(1.1)} }
+        body::after { content:''; position:fixed; inset:0; z-index:1; pointer-events:none; opacity:0.4; background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E"); }
+        .toggle { position:fixed; top:22px; right:26px; z-index:100; background:var(--card-bg); backdrop-filter:blur(12px); border:1px solid var(--card-border); border-radius:100px; padding:10px 20px; cursor:pointer; font-size:13px; font-family:'DM Sans',sans-serif; color:var(--text); font-weight:500; transition:all 0.3s; }
+        .toggle:hover { background:var(--accent); color:#fff; border-color:var(--accent); transform:scale(1.05); }
+        .page { position:relative; z-index:10; min-height:100vh; padding:40px; }
+        .back-link { display:inline-flex; align-items:center; gap:8px; color:var(--muted); text-decoration:none; font-size:13px; font-weight:500; padding:10px 20px; border:1px solid var(--card-border); border-radius:100px; background:var(--card-bg); backdrop-filter:blur(10px); transition:all 0.3s; margin-bottom:36px; }
+        .back-link:hover { color:#fff; background:var(--accent); border-color:var(--accent); transform:translateX(-4px); }
+        /* ── Main card ── */
+        .card { background:var(--card-bg); backdrop-filter:blur(18px); border:1px solid var(--card-border); border-radius:24px; padding:36px; max-width:1200px; margin:0 auto; position:relative; overflow:hidden; animation:cardIn 0.5s ease both; box-shadow:0 20px 60px rgba(0,0,0,0.25); }
+        .card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg,var(--accent),var(--accent2),var(--gold),var(--accent)); background-size:200% 100%; animation:shimmer 3s linear infinite; }
+        .card::after { content:''; position:absolute; inset:0; background:radial-gradient(circle at 50% 0%,var(--glow) 0%,transparent 60%); pointer-events:none; border-radius:24px; }
+        @keyframes shimmer { 0%{background-position:0%} 100%{background-position:200%} }
+        /* ── Card header ── */
+        .card-header { display:flex; align-items:center; gap:16px; margin-bottom:28px; padding-bottom:22px; border-bottom:1px solid var(--card-border); flex-wrap:wrap; }
+        .card-icon { width:48px; height:48px; border-radius:14px; background:linear-gradient(135deg,var(--accent),var(--accent2)); display:flex; align-items:center; justify-content:center; font-size:22px; box-shadow:0 6px 20px rgba(255,107,53,0.3); flex-shrink:0; }
+        .card-title { font-family:'Playfair Display',serif; font-size:26px; font-weight:700; background:linear-gradient(135deg,var(--text) 40%,var(--accent)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+        .card-sub { font-size:11px; letter-spacing:2px; text-transform:uppercase; color:var(--muted); margin-top:3px; }
+        .count-pill { margin-left:auto; background:rgba(255,107,53,0.12); border:1px solid var(--card-border); border-radius:100px; padding:6px 16px; font-size:12px; font-weight:600; color:var(--accent); white-space:nowrap; }
+        /* ── State messages ── */
+        .msg-box { background:rgba(255,107,53,0.07); border:1px solid rgba(255,107,53,0.2); border-radius:14px; padding:18px 22px; color:var(--accent2); font-size:14px; display:flex; align-items:center; gap:10px; margin-bottom:16px; }
+        .msg-box::before { content:'ℹ️'; font-size:18px; }
+        .success-box { background:rgba(34,197,94,0.07); border:1px solid rgba(34,197,94,0.25); border-radius:14px; padding:16px 20px; color:#86efac; font-size:14px; display:flex; align-items:center; gap:10px; margin-bottom:16px; }
+        .success-box::before { content:'✅'; font-size:18px; }
+        body.light .success-box { color:#166534; }
+        /* ── Meta info box ── */
+        .meta-box { background:rgba(255,107,53,0.06); border:1px solid var(--card-border); border-radius:14px; padding:16px 20px; margin-bottom:24px; display:flex; flex-wrap:wrap; gap:20px; }
+        .meta-item { display:flex; flex-direction:column; gap:3px; }
+        .meta-label { font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); }
+        .meta-value { font-size:16px; font-weight:600; color:var(--accent); }
+        /* ── Detail grid (key-value rows) ── */
+        .rows { padding:4px 0 8px; }
+        .row { display:flex; align-items:center; padding:14px 0; border-bottom:1px solid var(--td-border); gap:16px; animation:rowIn 0.35s ease both; }
+        .row:last-child { border-bottom:none; }
+        .row:hover { background:var(--row-hover); border-radius:10px; padding-left:8px; }
+        .row-key { font-size:11px; font-weight:600; letter-spacing:1px; text-transform:uppercase; color:var(--accent); min-width:160px; flex-shrink:0; }
+        .row-sep { color:var(--muted); opacity:0.4; }
+        .row-value { font-size:15px; color:var(--text); word-break:break-word; }
+        .row:nth-child(1){animation-delay:.05s} .row:nth-child(2){animation-delay:.10s}
+        .row:nth-child(3){animation-delay:.15s} .row:nth-child(4){animation-delay:.20s}
+        .row:nth-child(5){animation-delay:.25s} .row:nth-child(6){animation-delay:.30s}
+        /* ── Stat box ── */
+        .stat-box { margin-top:20px; padding:22px 26px; border-radius:18px; background:rgba(255,107,53,0.08); border:1px solid var(--card-border); display:inline-flex; flex-direction:column; gap:6px; min-width:200px; }
+        .stat-label { font-size:11px; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); }
+        .stat-value { font-family:'Playfair Display',serif; font-size:36px; font-weight:700; color:var(--accent); }
+        /* ── Table ── */
+        .table-wrapper { overflow-x:auto; border-radius:16px; border:1px solid var(--card-border); }
+        table { width:100%; border-collapse:collapse; font-size:14px; }
+        thead tr { background:var(--th-bg); }
+        th { padding:14px 18px; text-align:left; font-size:10.5px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--accent); white-space:nowrap; border-bottom:1px solid var(--card-border); }
+        td { padding:13px 18px; border-bottom:1px solid var(--td-border); color:var(--text); vertical-align:middle; }
+        tbody tr:last-child td { border-bottom:none; }
+        tbody tr { transition:background 0.2s; animation:rowIn 0.3s ease both; }
+        tbody tr:hover { background:var(--tr-hover); }
+        tbody tr:nth-child(1){animation-delay:.04s} tbody tr:nth-child(2){animation-delay:.08s}
+        tbody tr:nth-child(3){animation-delay:.12s} tbody tr:nth-child(4){animation-delay:.16s}
+        tbody tr:nth-child(5){animation-delay:.20s} tbody tr:nth-child(6){animation-delay:.24s}
+        tbody tr:nth-child(7){animation-delay:.28s} tbody tr:nth-child(8){animation-delay:.32s}
+        /* ── Status badge ── */
+        .status-badge { display:inline-block; padding:4px 12px; border-radius:100px; font-size:11px; font-weight:600; letter-spacing:0.5px; text-transform:uppercase; }
+        .status-pending    { background:rgba(251,191,36,0.15); color:#fbbf24; border:1px solid rgba(251,191,36,0.3); }
+        .status-delivered  { background:rgba(34,197,94,0.12); color:#22c55e; border:1px solid rgba(34,197,94,0.3); }
+        .status-cancelled  { background:rgba(239,68,68,0.12); color:#ef4444; border:1px solid rgba(239,68,68,0.3); }
+        .status-active     { background:rgba(59,130,246,0.12); color:#60a5fa; border:1px solid rgba(59,130,246,0.3); }
+        .status-assigned   { background:rgba(168,85,247,0.12); color:#c084fc; border:1px solid rgba(168,85,247,0.3); }
+        .status-completed  { background:rgba(34,197,94,0.12); color:#4ade80; border:1px solid rgba(34,197,94,0.3); }
+        body.light .status-pending { color:#92400e; } body.light .status-delivered { color:#166534; }
+        body.light .status-cancelled { color:#991b1b; } body.light .status-active { color:#1d4ed8; }
+        body.light .status-assigned { color:#6b21a8; } body.light .status-completed { color:#14532d; }
+        /* ══ ERROR BLOCK — identical to single.html ══ */
+        .error-wrap { background:rgba(239,68,68,0.07); border:1px solid rgba(239,68,68,0.28); border-radius:20px; overflow:hidden; margin-bottom:24px; box-shadow:0 12px 36px rgba(239,68,68,0.12); animation:cardIn 0.45s ease both; }
+        .error-header { background:rgba(239,68,68,0.13); padding:18px 26px; display:flex; align-items:center; gap:14px; border-bottom:1px solid rgba(239,68,68,0.18); }
+        .error-icon-wrap { width:44px; height:44px; border-radius:12px; flex-shrink:0; background:linear-gradient(135deg,#ef4444,#dc2626); display:flex; align-items:center; justify-content:center; font-size:20px; box-shadow:0 4px 14px rgba(239,68,68,0.4); }
+        .error-heading { font-family:'Playfair Display',serif; font-size:20px; font-weight:700; color:#ef4444; }
+        .error-heading-sub { font-size:11px; letter-spacing:2px; text-transform:uppercase; color:#f87171; margin-top:2px; opacity:0.8; }
+        body.light .error-heading { color:#dc2626; } body.light .error-heading-sub { color:#ef4444; }
+        .error-body { padding:20px 26px 24px; display:flex; flex-direction:column; gap:12px; }
+        .error-row { display:flex; align-items:flex-start; gap:14px; padding:13px 16px; border-radius:12px; background:rgba(239,68,68,0.06); border:1px solid rgba(239,68,68,0.12); transition:background 0.2s; }
+        .error-row:hover { background:rgba(239,68,68,0.1); }
+        .error-row-label { font-size:11px; font-weight:600; letter-spacing:1.2px; text-transform:uppercase; color:#f87171; min-width:72px; flex-shrink:0; padding-top:2px; }
+        .error-row-value { font-size:14px; color:#fca5a5; font-weight:400; line-height:1.5; word-break:break-word; }
+        body.light .error-row-label { color:#dc2626; } body.light .error-row-value { color:#b91c1c; }
+        body.light .error-row { background:rgba(239,68,68,0.05); border-color:rgba(239,68,68,0.15); }
+        .error-go-back { display:inline-flex; align-items:center; gap:8px; margin-top:4px; padding:10px 20px; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.25); border-radius:100px; font-size:13px; font-weight:500; color:#f87171; text-decoration:none; transition:all 0.3s; width:fit-content; }
+        .error-go-back:hover { background:#ef4444; color:#fff; border-color:#ef4444; transform:translateX(-3px); }
+        body.light .error-go-back { color:#dc2626; }
+        /* ── Animations ── */
+        @keyframes cardIn { from{opacity:0;transform:translateY(22px) scale(0.97)} to{opacity:1;transform:translateY(0) scale(1)} }
+        @keyframes rowIn  { from{opacity:0;transform:translateX(-8px)} to{opacity:1;transform:translateX(0)} }
+        @media(max-width:600px){ .page{padding:20px 16px} .card{padding:22px 16px} .row-key{min-width:110px} }
+    </style>
+</head>
+<body>
+<div class="bg-canvas"><div class="orb orb1"></div><div class="orb orb2"></div><div class="orb orb3"></div></div>
+<button class="toggle" onclick="toggleMode()">☀️ Light</button>
+<div class="page">
+    <a class="back-link" href="/menuitems">← Back to Order Items</a>
+    <div class="card">
+        <div class="card-header">
+            <div class="card-icon">📦</div>
+            <div>
+                <div class="card-title" id="pageTitle">Order Item Details</div>
+                <div class="card-sub">API Response</div>
+            </div>
+            <div class="count-pill" id="countPill" style="display:none"></div>
+        </div>
+
+        <div class="error-wrap" th:if="${error}" id="errorWrap">
+            <div class="error-header">
+                <div class="error-icon-wrap">🚫</div>
+                <div>
+                    <div class="error-heading">Something went wrong</div>
+                    <div class="error-heading-sub">API Error Response</div>
+                </div>
+            </div>
+            <div class="error-body" id="errBody"></div>
+            <span id="rawErr" th:text="${error}" style="display:none"></span>
+        </div>
+        <div class="msg-box" th:if="${orderItems == null or #lists.isEmpty(orderItems)}">No records found.</div>
+        <div class="table-wrapper" th:if="${orderItems != null and !#lists.isEmpty(orderItems)}">
+            <table>
+                <thead><tr><th>Order Item ID</th><th>Order ID</th><th>Item ID</th><th>Item Name</th><th>Item Price</th><th>Quantity</th><th>Subtotal</th></tr></thead>
+                <tbody id="mainTbody">
+                <tr th:each="item : ${orderItems}">
+                    <td><strong th:text="${item['orderItemId']}" style="color:var(--accent)"></strong></td>
+                    <td th:text="${item['orderId']}"></td>
+                    <td th:text="${item['itemId']}"></td>
+                    <td style="font-weight:500" th:text="${item['itemName']}"></td>
+                    <td th:text="'₹' + ${item['itemPrice']}"></td>
+                    <td th:text="${item['quantity']}"></td>
+                    <td style="font-weight:600;color:var(--accent2)" th:text="'₹' + ${item['subtotal']}"></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+let isDark=true;
+function toggleMode(){isDark=!isDark;document.body.classList.toggle('light',!isDark);document.querySelector('.toggle').textContent=isDark?'☀️ Light':'🌙 Dark';}
+
+function renderError(rawId, bodyId){
+    const rawEl=document.getElementById(rawId);
+    const bodyEl=document.getElementById(bodyId);
+    if(!rawEl||!bodyEl) return;
+    const raw=rawEl.textContent.trim();
+    if(!raw) return;
+    let status=null,message=null,errorType=null;
+    try{
+        const obj=JSON.parse(raw);
+        status=obj.status||null; errorType=obj.error||null;
+        message=obj.message||obj.detail||obj.description||obj.msg||null;
+        if(!status) status=obj.statusCode||null;
+    }catch(e){ message=raw; }
+    const statusLabels={400:'400 — Bad Request',401:'401 — Unauthorized',403:'403 — Forbidden',404:'404 — Not Found',405:'405 — Method Not Allowed',409:'409 — Conflict',422:'422 — Unprocessable Entity',500:'500 — Internal Server Error',502:'502 — Bad Gateway',503:'503 — Service Unavailable'};
+    const rows=[];
+    if(status) rows.push({label:'Status',icon:getIcon(status),value:statusLabels[status]||String(status)});
+    if(errorType) rows.push({label:'Error',icon:'🏷️',value:errorType});
+    if(message) rows.push({label:'Message',icon:'💬',value:message});
+    if(!rows.length) rows.push({label:'Details',icon:'📄',value:raw});
+    rows.forEach(r=>{
+        const d=document.createElement('div');
+        d.className='error-row';
+        d.innerHTML=`<span class="error-row-label">${r.icon} ${esc(r.label)}</span><span class="error-row-value">${esc(r.value)}</span>`;
+        bodyEl.appendChild(d);
+    });
+    const btn=document.createElement('a');
+    btn.className='error-go-back'; btn.href='javascript:history.back()'; btn.textContent='← Go Back & Try Again';
+    bodyEl.appendChild(btn);
+}
+function getIcon(code){if(code>=500)return'🔥';if(code===404)return'🔍';if(code===403||code===401)return'🔒';if(code===400||code===422)return'⚠️';return'❌';}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function statusBadge(val){
+    if(!val) return '<span class="status-badge">—</span>';
+    const cls='status-'+val.toString().toLowerCase();
+    return `<span class="status-badge ${cls}">${esc(val)}</span>`;
+}
+function countRows(tbodyId,pillId){
+    const t=document.getElementById(tbodyId);
+    const p=document.getElementById(pillId);
+    if(!t||!p) return;
+    const n=t.querySelectorAll('tr').length;
+    if(n>0){p.textContent=n+(n===1?' record':' records');p.style.display='block';}
+}
+document.addEventListener('DOMContentLoaded',()=>{
+    renderError('rawErr','errBody');
+    renderError('rawErr2','errBody2');
+    countRows('mainTbody','countPill');
+    // apply status badges
+    document.querySelectorAll('td[data-status]').forEach(td=>{
+        td.innerHTML=statusBadge(td.dataset.status);
+    });
+});
+</script>
+</body>
+</html>

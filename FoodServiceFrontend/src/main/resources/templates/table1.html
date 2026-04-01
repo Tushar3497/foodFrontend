@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Results</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root { --bg1:#0a0a0f; --accent:#ff6b35; --accent2:#f7c59f; --text:#f0ece3; --muted:#7a7a8a; --card-bg:rgba(255,255,255,0.045); --card-border:rgba(255,107,53,0.18); --th-bg:rgba(255,107,53,0.18); --tr-hover:rgba(255,107,53,0.06); }
+        body.light { --bg1:#fff8f3; --accent:#e85d04; --accent2:#f4a261; --text:#1a1a2e; --muted:#888; --card-bg:rgba(255,255,255,0.9); --card-border:rgba(232,93,4,0.2); --th-bg:rgba(232,93,4,0.12); --tr-hover:rgba(232,93,4,0.05); }
+        body { font-family:'DM Sans',sans-serif; background:var(--bg1); color:var(--text); min-height:100vh; overflow-x:hidden; transition:background 0.5s,color 0.5s; }
+        .bg-canvas { position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
+        .orb { position:absolute; border-radius:50%; filter:blur(90px); opacity:0.15; animation:drift 18s ease-in-out infinite alternate; }
+        .orb1 { width:500px; height:500px; background:#ff6b35; top:-130px; left:-100px; animation-duration:14s; }
+        .orb2 { width:360px; height:360px; background:#ff9a3c; bottom:-80px; right:-60px; animation-duration:20s; animation-delay:-6s; }
+        body.light .orb { opacity:0.1; }
+        @keyframes drift { 0%{transform:translate(0,0) scale(1)} 100%{transform:translate(40px,30px) scale(1.1)} }
+        body::after { content:''; position:fixed; inset:0; z-index:1; background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E"); opacity:0.4; pointer-events:none; }
+        .toggle { position:fixed; top:22px; right:26px; z-index:100; background:var(--card-bg); backdrop-filter:blur(12px); border:1px solid var(--card-border); border-radius:100px; padding:10px 20px; cursor:pointer; font-size:13px; font-family:'DM Sans',sans-serif; color:var(--text); font-weight:500; transition:all 0.3s; }
+        .toggle:hover { background:var(--accent); color:#fff; border-color:var(--accent); transform:scale(1.05); }
+        .page { position:relative; z-index:10; min-height:100vh; padding:40px; }
+        .back-link { display:inline-flex; align-items:center; gap:8px; color:var(--muted); text-decoration:none; font-size:13px; font-weight:500; padding:10px 20px; border:1px solid var(--card-border); border-radius:100px; background:var(--card-bg); backdrop-filter:blur(10px); transition:all 0.3s; margin-bottom:36px; }
+        .back-link:hover { color:#fff; background:var(--accent); border-color:var(--accent); transform:translateX(-4px); }
+        .card { background:var(--card-bg); backdrop-filter:blur(18px); border:1px solid var(--card-border); border-radius:24px; padding:36px; max-width:1100px; margin:0 auto; position:relative; overflow:hidden; animation:cardIn 0.5s ease both; box-shadow:0 20px 60px rgba(0,0,0,0.25); }
+        .card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg,var(--accent),var(--accent2),#ffd700,var(--accent)); background-size:200% 100%; animation:shimmer 3s linear infinite; }
+        @keyframes shimmer { 0%{background-position:0%} 100%{background-position:200%} }
+        .card-header { display:flex; align-items:center; gap:14px; margin-bottom:28px; padding-bottom:20px; border-bottom:1px solid var(--card-border); }
+        .card-icon { width:46px; height:46px; border-radius:14px; background:linear-gradient(135deg,var(--accent),var(--accent2)); display:flex; align-items:center; justify-content:center; font-size:20px; box-shadow:0 6px 20px rgba(255,107,53,0.3); }
+        .result-title { font-family:'Playfair Display',serif; font-size:26px; font-weight:700; background:linear-gradient(135deg,var(--text) 40%,var(--accent)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+        /* Error / message */
+        .error-box { background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.3); border-radius:14px; padding:18px 22px; color:#fca5a5; font-size:14px; display:flex; align-items:center; gap:10px; }
+        .error-box::before { content:'⚠️'; font-size:18px; }
+        body.light .error-box { color:#b91c1c; }
+        .msg-box { background:rgba(255,107,53,0.08); border:1px solid rgba(255,107,53,0.25); border-radius:14px; padding:18px 22px; color:var(--accent2); font-size:14px; display:flex; align-items:center; gap:10px; }
+        .msg-box::before { content:'ℹ️'; font-size:18px; }
+        /* Table */
+        .table-wrapper { overflow-x:auto; border-radius:14px; border:1px solid var(--card-border); }
+        table { width:100%; border-collapse:collapse; font-size:14px; }
+        thead tr { background:var(--th-bg); }
+        th { padding:14px 18px; text-align:left; font-size:11px; font-weight:600; letter-spacing:1.2px; text-transform:uppercase; color:var(--accent); white-space:nowrap; border-bottom:1px solid var(--card-border); }
+        td { padding:13px 18px; border-bottom:1px solid rgba(255,255,255,0.04); color:var(--text); }
+        body.light td { border-bottom-color:rgba(0,0,0,0.05); }
+        tbody tr:last-child td { border-bottom:none; }
+        tbody tr { transition:background 0.2s; }
+        tbody tr:hover { background:var(--tr-hover); }
+        @keyframes cardIn { from{opacity:0;transform:translateY(22px) scale(0.97)} to{opacity:1;transform:translateY(0) scale(1)} }
+        @media(max-width:600px){.page{padding:20px 16px}.back-link{margin-bottom:24px}}
+    </style>
+</head>
+<body>
+<div class="bg-canvas"><div class="orb orb1"></div><div class="orb orb2"></div></div>
+<button class="toggle" onclick="toggleMode()">☀️ Light</button>
+
+<div class="page">
+    <a class="back-link" href="/">← Back to Home</a>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-icon">📊</div>
+            <div class="result-title">Results</div>
+        </div>
+
+        <!-- Error from controller -->
+        <div class="error-box" th:if="${error}" th:text="${error}"></div>
+
+        <!-- safeGet returned string / message -->
+        <div class="msg-box" th:if="${data instanceof T(java.lang.String)}" th:text="${data}"></div>
+
+        <!-- No data -->
+        <div class="msg-box" th:if="${data == null}">No data found</div>
+
+        <!-- Empty list -->
+        <div class="msg-box" th:if="${data != null and !(data instanceof T(java.lang.String)) and #lists.isEmpty(data)}">No records available</div>
+
+        <!-- Normal table -->
+        <div class="table-wrapper"
+             th:if="${data != null and !(data instanceof T(java.lang.String)) and !#lists.isEmpty(data)}">
+            <table class="results-table">
+    <thead>
+        <tr>
+            <th>RATING ID</th>
+            <th>RATING</th>
+            <th>REVIEW</th>
+            <th>RESTAURANT ID</th>
+            <th>RESTAURANT NAME</th>
+            <th>RESTAURANT ADDRESS</th>
+            <th>RESTAURANT PHONE</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr th:each="row : ${data}">
+            <td th:text="${row['ratingId']}"></td>
+            <td th:text="${row['rating']}"></td>
+            <td th:text="${row['review']}"></td>
+            <td th:text="${row['restaurant']['restaurantId']}"></td>
+            <td th:text="${row['restaurant']['restaurantName']}"></td>
+            <td th:text="${row['restaurant']['restaurantAddress']}"></td>
+            <td th:text="${row['restaurant']['restaurantPhone']}"></td>
+        </tr>
+    </tbody>
+</table>
+        </div>
+    </div>
+</div>
+<script>let d=true;function toggleMode(){d=!d;document.body.classList.toggle('light',!d);document.querySelector('.toggle').textContent=d?'☀️ Light':'🌙 Dark';}</script>
+</body>
+</html>
