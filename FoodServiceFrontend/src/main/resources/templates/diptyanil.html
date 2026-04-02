@@ -40,7 +40,7 @@
         .card button { background:linear-gradient(135deg,var(--accent),#e05a28); color:#fff; border:none; border-radius:10px; padding:11px 26px; font-size:14px; font-weight:500; font-family:'DM Sans',sans-serif; cursor:pointer; transition:transform 0.2s,box-shadow 0.2s; white-space:nowrap; box-shadow:0 4px 16px rgba(255,107,53,0.35); }
         .card button:hover { transform:translateY(-2px) scale(1.03); box-shadow:0 8px 24px rgba(255,107,53,0.5); }
         @keyframes cardIn { from{opacity:0;transform:translateY(22px) scale(0.97)} to{opacity:1;transform:translateY(0) scale(1)} }
-        @media(max-width:600px){.container{padding:20px 16px 60px}.back-link{margin-left:16px}.card input{min-width:100%}} to{opacity:1;transform:translateY(0)} }
+        @media(max-width:600px){.container{padding:20px 16px 60px}.back-link{margin-left:16px}.card input{min-width:100%}}
 
         /* ── Validation styles ── */
         .input-error {
@@ -153,9 +153,6 @@
 <script th:src="@{/js/script.js}"></script>
 <script>let d=true;function toggleMode(){d=!d;document.body.classList.toggle('light',!d);document.querySelector('.toggle').textContent=d?'☀️ Light':'🌙 Dark';}</script>
 
-
-
-
 <script>
 // ═══════════════════════════════════════════════════════
 //   COMPLETE VALIDATION ENGINE — all fields, all forms
@@ -188,6 +185,20 @@ function _validateOne(inp) {
 
     _clearErr(inp);
 
+    // ══════════════════════════════════════════════════════════
+    //  ✅ FIX 1: ID fields with type=number — handle immediately
+    //  and EXIT early so they NEVER reach the date check below.
+    //  This fixes the false "Enter a full date" error on ID fields.
+    // ══════════════════════════════════════════════════════════
+    if (type === 'number' && (name.endsWith('id') || name === 'id')) {
+        if (req && val === '') { _showErr(inp, 'This field is required.'); return false; }
+        if (val === '') return true;
+        const n = Number(val);
+        if (isNaN(n) || !Number.isInteger(n))  { _showErr(inp, 'Must be a whole number (no decimals).'); return false; }
+        if (n <= 0)                             { _showErr(inp, 'Must be greater than 0.'); return false; }
+        return true;  // ← exits here, never reaches date/other checks
+    }
+
     // ── Required ──────────────────────────────────────────────
     if (req && val === '') {
         _showErr(inp, 'This field is required.');
@@ -196,44 +207,37 @@ function _validateOne(inp) {
     if (val === '') return true; // optional & empty → skip
 
     // ══════════════════════════════════════════════════════════
-    //  TEXT / STRING FIELDS — must not be purely numeric
+    //  TEXT / STRING FIELDS
     // ══════════════════════════════════════════════════════════
-
-    // Name fields (restaurantName, itemName, customerName, driverName, name)
     if (['restaurantname','itemname','itemdescription','name',
          'drivername','vehicle','review','address',
          'restaurantaddress','line1','line2','city','state',
-         'updatename','updateline1','updateline2','updatecity','updatestate',
-         'updateline1'].includes(name) ||
+         'updatename','updateline1','updateline2','updatecity','updatestate'].includes(name) ||
         (name.endsWith('name') && type === 'text') ||
         name === 'address' || name === 'restaurantaddress') {
 
-        // Must not be purely a number
         if (/^\d+$/.test(val)) {
             _showErr(inp, 'This field must contain letters, not just numbers.');
             return false;
         }
-        // Must not be only special chars
         if (!/[a-zA-Z]/.test(val)) {
             _showErr(inp, 'Must contain at least one letter.');
             return false;
         }
-        // Min length
         if (val.length < 2) {
             _showErr(inp, 'Must be at least 2 characters.');
             return false;
         }
-        // For name fields: no special characters except spaces, dots, hyphens
         if (['name','restaurantname','itemname','updatename'].includes(name)) {
             if (!/^[a-zA-Z0-9\s.\-'&]+$/.test(val)) {
                 _showErr(inp, 'No special characters allowed except . - \' &');
                 return false;
             }
         }
-        return true; // passed all text checks, skip number checks below
+        return true;
     }
 
-    // City & State — letters + spaces only
+    // City & State
     if (['city','state','updatecity','updatestate'].includes(name)) {
         if (/^\d+$/.test(val)) { _showErr(inp, 'City/State cannot be a number.'); return false; }
         if (!/^[a-zA-Z\s\-]+$/.test(val)) { _showErr(inp, 'Use letters only (no digits or special chars).'); return false; }
@@ -241,28 +245,28 @@ function _validateOne(inp) {
         return true;
     }
 
-    // Vehicle — must have letters
+    // Vehicle
     if (name === 'vehicle') {
         if (!/[a-zA-Z]/.test(val)) { _showErr(inp, 'Vehicle must contain letters (e.g. Honda Activa).'); return false; }
         if (val.length < 2) { _showErr(inp, 'Must be at least 2 characters.'); return false; }
         return true;
     }
 
-    // Review — any text but not only numbers
+    // Review
     if (name === 'review') {
         if (/^\d+$/.test(val)) { _showErr(inp, 'Review must be text, not just a number.'); return false; }
         if (val.length < 3) { _showErr(inp, 'Review must be at least 3 characters.'); return false; }
         return true;
     }
 
-    // Address line 1/2
+    // Address lines
     if (name.includes('line1') || name.includes('line2') || name === 'address' || name.includes('restaurantaddress')) {
         if (/^\d+$/.test(val)) { _showErr(inp, 'Address must contain letters, not just numbers.'); return false; }
         if (!/[a-zA-Z]/.test(val)) { _showErr(inp, 'Address must contain letters.'); return false; }
         return true;
     }
 
-    // Coupon code — alphanumeric
+    // Coupon code
     if (name === 'code' || name.includes('couponcode')) {
         if (!/^[A-Za-z0-9_\-]+$/.test(val)) {
             _showErr(inp, 'Coupon code: letters, numbers, _ or - only.');
@@ -272,9 +276,8 @@ function _validateOne(inp) {
         return true;
     }
 
-    // ── Field field (sort) — must be a valid Java field name ──
+    // Sort field
     if (name === 'field') {
-        const allowed = ['itemprice','itemname','itemid','restaurantid','itemdescription'];
         if (!/^[a-zA-Z][a-zA-Z0-9]*$/.test(val)) {
             _showErr(inp, 'Field name must start with a letter and contain no spaces.');
             return false;
@@ -282,7 +285,7 @@ function _validateOne(inp) {
         return true;
     }
 
-    // ── Direction ─────────────────────────────────────────────
+    // Direction
     if (name === 'direction') {
         if (!['asc','desc'].includes(val.toLowerCase())) {
             _showErr(inp, 'Direction must be "asc" or "desc".');
@@ -327,7 +330,7 @@ function _validateOne(inp) {
     }
 
     // ══════════════════════════════════════════════════════════
-    //  STATUS / ORDER STATUS
+    //  STATUS
     // ══════════════════════════════════════════════════════════
     if (name === 'status' || name === 'orderstatus') {
         const validStatus = ['pending','delivered','cancelled','active','assigned','completed'];
@@ -341,15 +344,17 @@ function _validateOne(inp) {
 
     // ══════════════════════════════════════════════════════════
     //  DATE / DATETIME
+    //  ✅ FIX 2: Added type !== 'number' guard so number inputs
+    //  (IDs etc.) can never accidentally hit this block.
     // ══════════════════════════════════════════════════════════
-    if ((name.includes('date') || name === 'startdate' || name === 'enddate') && !name.includes('expiry')) {
+    if (type !== 'number' && (name.includes('date') || name === 'startdate' || name === 'enddate') && !name.includes('expiry')) {
         if (/^\d{1,4}$/.test(val)) { _showErr(inp, 'Enter a full date: YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS'); return false; }
         if (!/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2})?)?$/.test(val)) {
             _showErr(inp, 'Format: YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS (e.g. 2026-03-30T10:30:00)');
             return false;
         }
-        const d = new Date(val.split('T')[0]);
-        if (isNaN(d.getTime())) { _showErr(inp, 'Invalid date value.'); return false; }
+        const dt = new Date(val.split('T')[0]);
+        if (isNaN(dt.getTime())) { _showErr(inp, 'Invalid date value.'); return false; }
         return true;
     }
 
@@ -364,13 +369,13 @@ function _validateOne(inp) {
     }
 
     // ══════════════════════════════════════════════════════════
-    //  PRICE (itemPrice, price)
+    //  PRICE
     // ══════════════════════════════════════════════════════════
     if (name === 'itemprice' || name === 'price') {
         const n = parseFloat(val);
-        if (isNaN(n))   { _showErr(inp, 'Price must be a number.'); return false; }
-        if (n < 1)      { _showErr(inp, 'Price must be at least ₹1.'); return false; }
-        if (n > 1000000){ _showErr(inp, 'Price is unrealistically high.'); return false; }
+        if (isNaN(n))    { _showErr(inp, 'Price must be a number.'); return false; }
+        if (n < 1)       { _showErr(inp, 'Price must be at least ₹1.'); return false; }
+        if (n > 1000000) { _showErr(inp, 'Price is unrealistically high.'); return false; }
         return true;
     }
 
@@ -379,14 +384,14 @@ function _validateOne(inp) {
     // ══════════════════════════════════════════════════════════
     if (name.includes('discount')) {
         const n = parseFloat(val);
-        if (isNaN(n))   { _showErr(inp, 'Discount must be a number.'); return false; }
-        if (n < 0)      { _showErr(inp, 'Discount cannot be negative.'); return false; }
-        if (n > 100000) { _showErr(inp, 'Discount value is too high.'); return false; }
+        if (isNaN(n))    { _showErr(inp, 'Discount must be a number.'); return false; }
+        if (n < 0)       { _showErr(inp, 'Discount cannot be negative.'); return false; }
+        if (n > 100000)  { _showErr(inp, 'Discount value is too high.'); return false; }
         return true;
     }
 
     // ══════════════════════════════════════════════════════════
-    //  MIN / MAX (price or discount ranges)
+    //  MIN / MAX
     // ══════════════════════════════════════════════════════════
     if (name === 'min' || name === 'max') {
         const n = parseFloat(val);
@@ -412,13 +417,13 @@ function _validateOne(inp) {
     }
 
     // ══════════════════════════════════════════════════════════
-    //  GENERIC NUMBER/ID FIELDS (type="number", not caught above)
+    //  GENERIC NUMBER FIELDS (type="number", not caught above)
     // ══════════════════════════════════════════════════════════
     if (type === 'number') {
         const n = Number(val);
-        if (isNaN(n))               { _showErr(inp, 'Must be a valid number.'); return false; }
-        if (!Number.isInteger(n))   { _showErr(inp, 'Must be a whole number (no decimals).'); return false; }
-        if (n < 0)                  { _showErr(inp, 'Value cannot be negative.'); return false; }
+        if (isNaN(n))             { _showErr(inp, 'Must be a valid number.'); return false; }
+        if (!Number.isInteger(n)) { _showErr(inp, 'Must be a whole number (no decimals).'); return false; }
+        if (n < 0)                { _showErr(inp, 'Value cannot be negative.'); return false; }
         if (n === 0 && (name.includes('id') || name === 'quantity')) {
             _showErr(inp, 'Must be greater than 0.');
             return false;
@@ -426,9 +431,8 @@ function _validateOne(inp) {
         return true;
     }
 
-    // ── Driver ID (text type but must be positive integer) ────
+    // Driver ID (text type but must be positive integer)
     if (name === 'id' && type === 'text') {
-        // aditya: driver create uses type=text for id
         const n = Number(val);
         if (isNaN(n) || !Number.isInteger(n) || n <= 0) {
             _showErr(inp, 'Driver ID must be a positive whole number.');
@@ -443,7 +447,6 @@ function _validateOne(inp) {
 // ── Cross-field checks ───────────────────────────────────
 function _crossCheck(form) {
     let ok = true;
-    // min <= max
     const minEl = form.querySelector('[name="min"]');
     const maxEl = form.querySelector('[name="max"]');
     if (minEl && maxEl && minEl.value !== '' && maxEl.value !== '') {
@@ -452,7 +455,6 @@ function _crossCheck(form) {
             ok = false;
         }
     }
-    // startDate <= endDate
     const sd = form.querySelector('[name="startDate"]');
     const ed = form.querySelector('[name="endDate"]');
     if (sd && ed && sd.value && ed.value) {
